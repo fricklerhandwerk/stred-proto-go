@@ -1,6 +1,6 @@
-from pathlib import Path
 from enum import Enum
-from typing import List, Union, Mapping
+from pathlib import Path
+from typing import List, Mapping, Optional, Union
 
 
 class Range():
@@ -8,25 +8,49 @@ class Range():
     high: int
 
 
-class Enumeration():
-    label: str
-    # with aliasing we may have multiple names for an enumeration item
-    enumeration: Mapping[int, List[str]]
-    allow_alias: bool
+class Item():
+    _label: str
+
+    def __init__(self, label, *args, **kwargs):
+        self._label = label
+        super().__init__(*args, **kwargs)
+
+    @property
+    def label(self):
+        return self._label
+
+
+class Definition(Item):
     reserved: List[Union[int, Range]]
     reserved_names: List[str]
 
-    def __init__(self, label="", enumeration={}, allow_alias=False, reserved=[], reserved_names=[]):
-        self.label = label
-        self.enumeration = enumeration
-        self.allow_alias = allow_alias
-        self.reserved = reserved
-        self.reserved_names = reserved_names
+    def __init__(self, *args, **kwargs):
+        self.reserved = []
+        self.reserved_names = []
+        super().__init__(*args, **kwargs)
+
+
+class Container():
+    definitions: List[Definition]
+
+    def __init__(self, *args, **kwargs):
+        self.definitions = []
+        super().__init__(*args, **kwargs)
+
+
+class Enumeration(Definition):
+    # with aliasing we may have multiple names for an enumeration item
+    enumeration: Mapping[int, List[str]]
+    allow_alias: bool
+
+    def __init__(self, *args, **kwargs):
+        self.enumeration = {}
+        self.allow_alias = False
+        super().__init__(*args, **kwargs)
 
     def __str__(self):
         fields = indent("\n".join([f"{x} = {k};" for k, v in self.enumeration.items() for x in v]))
         return f"enum {self.label} {{{fields}}}"
-        return
 
 
 class KeyType(Enum):
@@ -50,68 +74,70 @@ class ValueType(Enum):
     BYTES = "bytes"
 
 
-Type = Union[KeyType, ValueType, "Message", Enumeration]
+Type = Union[KeyType, ValueType, Definition]
 
 
-class BaseField():
-    label: str
+class Field(Item):
     type: Type
     deprecated: bool
 
-    def __init__(self, label="", type=None, deprecated=False):
-        self.label = label
-        self.type = type
-        self.deprecated = deprecated
-
-
-class Field(BaseField):
-    repeated: bool
-
-    def __init__(self, repeated=False, *args, **kwargs):
-        self.repeated = repeated
+    def __init__(self, field_type, *args, **kwargs):
+        self.type = field_type
+        self.deprecated = False
         super().__init__(*args, **kwargs)
 
     def __str__(self):
         return f"{self.type.value} {self.label}"
 
 
-class Oneof():
-    label: str
-    fields: Mapping[int, BaseField]
+class RepeatableField(Field):
+    repeated: bool
+
+    def __init__(self, *args, **kwargs):
+        self.repeated = False
+        super().__init__(*args, **kwargs)
+
+    def __str__(self):
+        repeated = "repeated " if self.repeated else ""
+        return f"{repeated}{super().__str__()}"
 
 
-class MapField(BaseField):
+class OneOf(Item):
+    fields: Mapping[int, Field]
+
+
+class Map(Field):
     key: KeyType
 
 
-class Message():
-    label: str
-    fields: Mapping[int, Union[Field, Oneof, MapField]]
+class Message(Definition, Container):
+    fields: Mapping[int, Field]
 
-    reserved: List[Union[int, Range]]
-    reserved_names: List[str]
-
-    definitions: List[Union[Enumeration, "Message"]]
-
-    def __init__(self, label="", fields={}, reserved=[], reserved_names=[], definitions=[]):
-        self.label = label
-        self.fields = fields
-        self.reserved = reserved
-        self.reserved_names = reserved_names
-        self.definitions = definitions
+    def __init__(self, *args, **kwargs):
+        self.fields = {}
+        super().__init__(*args, **kwargs)
 
     def __str__(self):
-        def field(k, v):
-            return f"{v} = {k}{' [deprecated=true]' if v.deprecated else ''};"
-        fields = indent("\n".join([field(k, v) for k, v in self.fields.items()]))
+        def field(i, f):
+            deprecated = " [deprecated=true]" if f.deprecated else ""
+            return f"{f} = {i}{deprecated};"
+        fields = indent("\n".join([field(i, f) for i, f in self.fields.items()]))
         definitions = indent("\n\n".join([str(x) for x in self.definitions]))
         return f"message {self.label} {{{fields}{definitions}}}"
 
+    @property
+    def label(self):
+        return self._label
 
-def indent(x: str, level: int = 1, indent: str = "  ") -> str:
+    @label.setter
+    def label(self, value):
+        self._label = value
+
+
+def indent(x: str, level: int = 1, prefix: str = "  ") -> str:
     if x == "":
         return ""
-    return "\n" + indent * level + ("\n" + indent * level).join(x.split("\n")) + "\n"
+    return "\n" + prefix * level + ("\n" + prefix * level).join(x.split("\n")) + "\n"
 
 
 class RPC():
@@ -135,49 +161,52 @@ class Import():
     public: bool
 
 
-class Proto():
-    package: str
+class Proto(Container):
+    package: Optional[str]
     imports: List[Import]
     services: List[Service]
-    definitions: List[Union[Message, Enumeration]]
+    definitions: List[Definition]
 
-    def __init__(self, package="", imports=[], services=[], definitions=[]):
-        self.package = package
-        self.imports = imports
-        self.services = services
-        self.definitions = definitions
+    def __init__(self):
+        self.package = None
+        self.imports = []
+        self.services = []
+        self.definitions = []
+        super().__init__()
 
     def __str__(self):
         return "\n\n".join([f"package = {self.package};"] + [str(x) for x in self.definitions])
 
 
-test_fields = {
-    1: Field(label="broogle", type=KeyType.INT32),
-    5: Field(label="doingle", type=KeyType.UINT64, deprecated=True),
-}
-
-test_fields2 = {
-    2: Field(label="foo", type=KeyType.STRING),
-    3: Field(label="bar", type=ValueType.BYTES),
-}
-
-test_message = Message(label="MyMessage", fields=test_fields)
-
-test_enumeration = {
-    0: ["default"],
-    2: ["some"],
-    3: ["thing", "redundant"],
-}
-
-test_enum = Enumeration(label="MyEnum", enumeration=test_enumeration)
-
-test_message2 = Message(label="SomeOtherMessage", fields=test_fields2)
-test_message2.definitions = [test_enum, test_message]
-
-
-test_proto = Proto(package="testpackage", definitions=[test_message, test_enum, test_message2])
-
-
 def main():
-    print(test_proto)
+    test_fields = {
+        1: RepeatableField(KeyType.INT32, "broogle"),
+        5: RepeatableField(KeyType.UINT64, "doingle"),
+    }
+    test_fields[5].deprecated = True
 
+    test_fields2 = {
+        2: RepeatableField(KeyType.STRING, "foo"),
+        3: RepeatableField(ValueType.BYTES, "bar"),
+    }
+    test_fields2[3].repeated = True
+
+    test_message = Message("MyMessage")
+    test_message.fields = test_fields
+
+    test_enum = Enumeration("MyEnum")
+    test_enum.enumeration = {
+        0: ["default"],
+        2: ["some"],
+        3: ["thing", "redundant"],
+    }
+
+    test_message2 = Message("SomeOtherMessage")
+    test_message2.fields = test_fields2
+    test_message2.definitions = [test_enum, test_message]
+
+    test_proto = Proto()
+    test_proto.package = "testpackage"
+    test_proto.definitions = [test_message, test_enum, test_message2]
+
+    print(test_proto)
