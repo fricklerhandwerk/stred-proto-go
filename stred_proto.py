@@ -24,8 +24,8 @@ class Enumeration():
         self.reserved_names = reserved_names
 
     def __str__(self):
-        fields = [f"{x} = {k};" for k, v in self.enumeration.items() for x in v]
-        return "enum {self.label} {{\n  {fields}\n}}".format(self=self, fields='\n  '.join(fields))
+        fields = indent("\n".join([f"{x} = {k};" for k, v in self.enumeration.items() for x in v]))
+        return f"enum {self.label} {{{fields}}}"
         return
 
 
@@ -91,20 +91,27 @@ class Message():
     reserved: List[Union[int, Range]]
     reserved_names: List[str]
 
-    enumerations: List[Enumeration]
-    messages: List["Message"]
+    definitions: List[Union[Enumeration, "Message"]]
 
-    def __init__(self, label="", fields={}, reserved=[], reserved_names=[]):
+    def __init__(self, label="", fields={}, reserved=[], reserved_names=[], definitions=[]):
         self.label = label
         self.fields = fields
         self.reserved = reserved
         self.reserved_names = reserved_names
+        self.definitions = definitions
 
     def __str__(self):
         def field(k, v):
             return f"{v} = {k}{' [deprecated=true]' if v.deprecated else ''};"
-        fields = [field(k, v) for k, v in self.fields.items()]
-        return "message {self.label} {{\n  {fields}\n}}".format(self=self, fields="\n  ".join(fields))
+        fields = indent("\n".join([field(k, v) for k, v in self.fields.items()]))
+        definitions = indent("\n\n".join([str(x) for x in self.definitions]))
+        return f"message {self.label} {{{fields}{definitions}}}"
+
+
+def indent(x: str, level: int = 1, indent: str = "  ") -> str:
+    if x == "":
+        return ""
+    return "\n" + indent * level + ("\n" + indent * level).join(x.split("\n")) + "\n"
 
 
 class RPC():
@@ -129,15 +136,29 @@ class Import():
 
 
 class Proto():
-    imports: List[Import]
     package: str
+    imports: List[Import]
     services: List[Service]
     definitions: List[Union[Message, Enumeration]]
+
+    def __init__(self, package="", imports=[], services=[], definitions=[]):
+        self.package = package
+        self.imports = imports
+        self.services = services
+        self.definitions = definitions
+
+    def __str__(self):
+        return "\n\n".join([f"package = {self.package};"] + [str(x) for x in self.definitions])
 
 
 test_fields = {
     1: Field(label="broogle", type=KeyType.INT32),
     5: Field(label="doingle", type=KeyType.UINT64, deprecated=True),
+}
+
+test_fields2 = {
+    2: Field(label="foo", type=KeyType.STRING),
+    3: Field(label="bar", type=ValueType.BYTES),
 }
 
 test_message = Message(label="MyMessage", fields=test_fields)
@@ -150,8 +171,13 @@ test_enumeration = {
 
 test_enum = Enumeration(label="MyEnum", enumeration=test_enumeration)
 
+test_message2 = Message(label="SomeOtherMessage", fields=test_fields2)
+test_message2.definitions = [test_enum, test_message]
+
+
+test_proto = Proto(package="testpackage", definitions=[test_message, test_enum, test_message2])
+
 
 def main():
-    print(test_message)
-    print(test_enum)
+    print(test_proto)
 
