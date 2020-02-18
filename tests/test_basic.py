@@ -37,6 +37,16 @@ def test_instantiation():
     print(test_proto)
 
 
-def test_invalid_identifier():
+def test_message_new_invalid_identifier():
     with pytest.raises(ValidationError):
-        Message("InvalidIdentifier+")
+        Message("InvalidIdentifier!")
+    with pytest.raises(ValidationError):
+        Enumeration("InvalidIdentifier!")
+    with pytest.raises(ValidationError):
+        RepeatableField(KeyType.BOOL, "InvalidIdentifier!")
+
+
+def test_message_set_invalid_identifier():
+    m = Message("ValidIdentifier")
+    with pytest.raises(ValidationError):
+        m.label = "1InvalidIdentifier"

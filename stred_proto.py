@@ -16,18 +16,25 @@ class Range():
 class Identifier():
     _label: str
 
-    def __init__(self, label, *args, **kwargs):
-        identifier = re.compile("^([A-Z]|[a-z])([0-9]|[A-Z]|[a-z]|_])*$")
+    identifier = re.compile("^([A-Z]|[a-z])([0-9]|[A-Z]|[a-z]|_])*$")
 
-        if identifier.match(label):
+    def __init__(self, label, *args, **kwargs):
+        if self.identifier.match(label):
             self._label = label
         else:
-            raise ValidationError(f'Identifier must match {identifier.pattern}')
+            raise ValidationError(f'Identifier must match {self.identifier.pattern}')
         super().__init__(*args, **kwargs)
 
     @property
     def label(self):
         return self._label
+
+    @label.setter
+    def label(self, value):
+        if self.identifier.match(value):
+            self._label = value
+        else:
+            raise ValidationError(f'Identifier must match {self.identifier.pattern}')
 
 
 class Definition(Identifier):
@@ -134,14 +141,6 @@ class Message(Definition, Container):
         fields = indent("\n".join([field(i, f) for i, f in self.fields.items()]))
         definitions = indent("\n\n".join([str(x) for x in self.definitions]))
         return f"message {self.label} {{{fields}{definitions}}}"
-
-    @property
-    def label(self):
-        return self._label
-
-    @label.setter
-    def label(self, value):
-        self._label = value
 
 
 def indent(x: str, level: int = 1, prefix: str = "  ") -> str:
