@@ -13,7 +13,7 @@ class Range():
     high: int
 
 
-class Item():
+class Identifier():
     _label: str
 
     def __init__(self, label, *args, **kwargs):
@@ -30,7 +30,7 @@ class Item():
         return self._label
 
 
-class Definition(Item):
+class Definition(Identifier):
     reserved: List[Union[int, Range]]
     reserved_names: List[str]
 
@@ -87,7 +87,7 @@ class ValueType(Enum):
 Type = Union[KeyType, ValueType, Definition]
 
 
-class Field(Item):
+class Field(Identifier):
     type: Type
     deprecated: bool
 
@@ -112,7 +112,7 @@ class RepeatableField(Field):
         return f"{repeated}{super().__str__()}"
 
 
-class OneOf(Item):
+class OneOf(Identifier):
     fields: Mapping[int, Field]
 
 
