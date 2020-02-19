@@ -1,36 +1,38 @@
 import pytest
-from stred_proto import (Enumeration, KeyType, Message, Proto, RepeatableField,
-                         ValidationError, ValueType)
+
+from stred_proto import (Enumeration, Field, Identifier, KeyType, Message,
+                         Protocol, TypedField, ValidationError, ValueType)
 
 
 def test_instantiation():
-    test_fields = {
-        1: RepeatableField(KeyType.INT32, "broogle"),
-        5: RepeatableField(KeyType.UINT64, "doingle"),
-    }
-    test_fields[5].deprecated = True
+    test_fields = [
+        TypedField(KeyType.INT32, 1, "broogle"),
+        TypedField(KeyType.UINT64, 5, "doingle"),
+    ]
+    test_fields[1].deprecated = True
 
-    test_fields2 = {
-        2: RepeatableField(KeyType.STRING, "foo"),
-        3: RepeatableField(ValueType.BYTES, "bar"),
-    }
-    test_fields2[3].repeated = True
+    test_fields2 = [
+        TypedField(KeyType.STRING, 2, "foo"),
+        TypedField(ValueType.BYTES, 3, "bar"),
+    ]
+    test_fields2[1].repeated = True
 
     test_message = Message("MyMessage")
     test_message.fields = test_fields
 
     test_enum = Enumeration("MyEnum")
-    test_enum.enumeration = {
-        0: ["default"],
-        2: ["some"],
-        3: ["thing", "redundant"],
-    }
+    test_enum.fields = [
+        Field(0, "default"),
+        Field(1, "some"),
+        Field(2, "thing"),
+        Field(2, "redundant"),
+    ]
 
     test_message2 = Message("SomeOtherMessage")
     test_message2.fields = test_fields2
     test_message2.definitions = [test_enum, test_message]
 
-    test_proto = Proto()
+    test_proto = Protocol()
     test_proto.package = "testpackage"
     test_proto.definitions = [test_message, test_enum, test_message2]
 
@@ -39,14 +41,14 @@ def test_instantiation():
 
 def test_message_new_invalid_identifier():
     with pytest.raises(ValidationError):
-        Message("InvalidIdentifier!")
+        Message(Identifier("InvalidIdentifier!"))
     with pytest.raises(ValidationError):
-        Enumeration("InvalidIdentifier!")
+        Enumeration(Identifier("InvalidIdentifier!"))
     with pytest.raises(ValidationError):
-        RepeatableField(KeyType.BOOL, "InvalidIdentifier!")
+        TypedField(KeyType.BOOL, Identifier("InvalidIdentifier!"))
 
 
 def test_message_set_invalid_identifier():
-    m = Message("ValidIdentifier")
+    m = Message(Identifier("ValidIdentifier"))
     with pytest.raises(ValidationError):
-        m.label = "1InvalidIdentifier"
+        m.label = Identifier("1InvalidIdentifier")

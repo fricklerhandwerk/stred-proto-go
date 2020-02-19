@@ -1,50 +1,32 @@
 import re
 from enum import Enum
 from pathlib import Path
-from typing import List, Mapping, Optional, Union
+from typing import List, Optional, Union
 
 
 class ValidationError(Exception):
     pass
 
 
-class Range():
-    low: int
-    high: int
+class Identifier(str):
+    identifier = re.compile(r"^[A-Za-z][0-9A-Za-z_]*$")
+
+    def __new__(cls, value):
+        if not cls.identifier.match(value):
+            raise ValidationError(f'Identifier must match {cls.identifier.pattern}')
+        return super().__new__(cls, value)
 
 
-class Identifier():
-    _label: str
-
-    identifier = re.compile("^([A-Z]|[a-z])([0-9]|[A-Z]|[a-z]|_])*$")
+class Declaration():
+    label: Identifier
 
     def __init__(self, label, *args, **kwargs):
-        if self.identifier.match(label):
-            self._label = label
-        else:
-            raise ValidationError(f'Identifier must match {self.identifier.pattern}')
+        self.label = label
         super().__init__(*args, **kwargs)
 
-    @property
-    def label(self):
-        return self._label
 
-    @label.setter
-    def label(self, value):
-        if self.identifier.match(value):
-            self._label = value
-        else:
-            raise ValidationError(f'Identifier must match {self.identifier.pattern}')
-
-
-class Definition(Identifier):
-    reserved: List[Union[int, Range]]
-    reserved_names: List[str]
-
-    def __init__(self, *args, **kwargs):
-        self.reserved = []
-        self.reserved_names = []
-        super().__init__(*args, **kwargs)
+class Definition(Declaration):
+    pass
 
 
 class Container():
@@ -53,21 +35,6 @@ class Container():
     def __init__(self, *args, **kwargs):
         self.definitions = []
         super().__init__(*args, **kwargs)
-
-
-class Enumeration(Definition):
-    # with aliasing we may have multiple names for an enumeration item
-    enumeration: Mapping[int, List[str]]
-    allow_alias: bool
-
-    def __init__(self, *args, **kwargs):
-        self.enumeration = {}
-        self.allow_alias = False
-        super().__init__(*args, **kwargs)
-
-    def __str__(self):
-        fields = indent("\n".join([f"{x} = {k};" for k, v in self.enumeration.items() for x in v]))
-        return f"enum {self.label} {{{fields}}}"
 
 
 class KeyType(Enum):
@@ -94,20 +61,49 @@ class ValueType(Enum):
 Type = Union[KeyType, ValueType, Definition]
 
 
-class Field(Identifier):
-    type: Type
+class Reservation():
+    pass
+
+
+class Range():
+    start: int
+    end: int
+
+
+class ReservedNumbers(Reservation):
+    numbers: List[Union[int, Range]]
+
+
+class ReservedLabel(Reservation):
+    labels: List[Identifier]
+
+
+class Field(Declaration):
+    number: int
     deprecated: bool
 
-    def __init__(self, field_type, *args, **kwargs):
-        self.type = field_type
+    def __init__(self, number, *args, **kwargs):
+        self.number = number
         self.deprecated = False
         super().__init__(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.type.value} {self.label}"
+        deprecated = " [deprecated=true]" if self.deprecated else ""
+        return f"{self.label} = {self.number}{deprecated};"
 
 
-class RepeatableField(Field):
+class TypedField(Field):
+    type: Type
+
+    def __init__(self, field_type, *args, **kwargs):
+        self.type = field_type
+        super().__init__(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.type.value} {super().__str__()}"
+
+
+class RepeatableField(TypedField):
     repeated: bool
 
     def __init__(self, *args, **kwargs):
@@ -119,28 +115,52 @@ class RepeatableField(Field):
         return f"{repeated}{super().__str__()}"
 
 
-class OneOf(Identifier):
-    fields: Mapping[int, Field]
-
-
 class Map(Field):
-    key: KeyType
+    key_type: KeyType
+    value_type: Type
 
-
-class Message(Definition, Container):
-    fields: Mapping[int, Field]
-
-    def __init__(self, *args, **kwargs):
-        self.fields = {}
+    def __init__(self, key_type, value_type, *args, **kwargs):
+        self.key_type = key_type
+        self.value_type = value_type
         super().__init__(*args, **kwargs)
 
     def __str__(self):
-        def field(i, f):
-            deprecated = " [deprecated=true]" if f.deprecated else ""
-            return f"{f} = {i}{deprecated};"
-        fields = indent("\n".join([field(i, f) for i, f in self.fields.items()]))
-        definitions = indent("\n\n".join([str(x) for x in self.definitions]))
-        return f"message {self.label} {{{fields}{definitions}}}"
+        return f"map<{self.key_type}, {self.value_type}> {super().__str__()}"
+
+
+class OneOf(Declaration):
+    fields: List[TypedField]
+
+    def __str__(self):
+        fields = "\n".join([str(f) for f in self.fields])
+        return f"oneof {{{indent(fields)}}}"
+
+
+class Enumeration(Definition):
+    fields: List[Union[Field, Reservation]]
+    allow_alias: bool
+
+    def __init__(self, *args, **kwargs):
+        self.fields = []
+        self.allow_alias = False
+        super().__init__(*args, **kwargs)
+
+    def __str__(self):
+        fields = "\n".join([str(f) for f in self.fields])
+        return f"enum {self.label} {{{indent(fields)}}}"
+
+
+class Message(Definition, Container):
+    fields: List[Union[RepeatableField, Map, OneOf, Reservation]]
+
+    def __init__(self, *args, **kwargs):
+        self.fields = []
+        super().__init__(*args, **kwargs)
+
+    def __str__(self):
+        fields = "\n".join([str(f) for f in self.fields])
+        definitions = "\n\n".join([str(d) for d in self.definitions])
+        return f"message {self.label} {{{indent(fields)}{indent(definitions)}}}"
 
 
 def indent(x: str, level: int = 1, prefix: str = "  ") -> str:
@@ -149,19 +169,17 @@ def indent(x: str, level: int = 1, prefix: str = "  ") -> str:
     return "\n" + prefix * level + ("\n" + prefix * level).join(x.split("\n")) + "\n"
 
 
-class RPC():
-    label: str
+class RPC(Declaration):
     requestType: Message
     streamRequest: bool
     responseType: Message
     streamResponse: bool
 
 
-class Service():
+class Service(Declaration):
     """
     https://developers.google.com/protocol-buffers/docs/reference/proto3-spec#service_definition
     """
-    label: str
     rpcs: List[RPC]
 
 
@@ -170,21 +188,26 @@ class Import():
     public: bool
 
 
-class Proto(Container):
-    package: Optional[str]
+class Protocol(Container):
+    package: Optional[Identifier]
     imports: List[Import]
     services: List[Service]
-    definitions: List[Definition]
 
     def __init__(self):
         self.package = None
         self.imports = []
         self.services = []
-        self.definitions = []
         super().__init__()
 
     def __str__(self):
-        return "\n\n".join([f"package = {self.package};"] + [str(x) for x in self.definitions])
+        syntax = 'syntax = "proto3";'
+
+        def package():
+            if self.package is None:
+                return []
+            return [f"package = {self.package};"]
+
+        return "\n\n".join([syntax] + package() + [str(x) for x in self.definitions])
 
 
 def main():
