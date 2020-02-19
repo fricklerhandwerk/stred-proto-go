@@ -11,18 +11,32 @@ class ValidationError(Exception):
 class Identifier(str):
     identifier = re.compile(r"^[A-Za-z][0-9A-Za-z_]*$")
 
-    def __new__(cls, value):
+    def __new__(cls, value: str):
         if not cls.identifier.match(value):
             raise ValidationError(f'Identifier must match {cls.identifier.pattern}')
         return super().__new__(cls, value)
 
 
 class Declaration():
-    label: Identifier
+    _label: Identifier
 
-    def __init__(self, label, *args, **kwargs):
-        self.label = label
+    def __init__(self, label: Union[Identifier, str], *args, **kwargs):
+        if isinstance(label, Identifier):
+            self._label = label
+        else:
+            self._label = Identifier(label)
         super().__init__(*args, **kwargs)
+
+    @property
+    def label(self) -> Identifier:
+        return self._label
+
+    @label.setter
+    def label(self, value: Union[Identifier, str]):
+        if isinstance(value, Identifier):
+            self._label = value
+        else:
+            self._label = Identifier(value)
 
 
 class Definition(Declaration):
@@ -82,7 +96,7 @@ class Field(Declaration):
     number: int
     deprecated: bool
 
-    def __init__(self, number, *args, **kwargs):
+    def __init__(self, number: int, *args, **kwargs):
         self.number = number
         self.deprecated = False
         super().__init__(*args, **kwargs)
@@ -95,7 +109,7 @@ class Field(Declaration):
 class TypedField(Field):
     type: Type
 
-    def __init__(self, field_type, *args, **kwargs):
+    def __init__(self, field_type: Type, *args, **kwargs):
         self.type = field_type
         super().__init__(*args, **kwargs)
 
@@ -119,7 +133,7 @@ class Map(Field):
     key_type: KeyType
     value_type: Type
 
-    def __init__(self, key_type, value_type, *args, **kwargs):
+    def __init__(self, key_type: KeyType, value_type: Type, *args, **kwargs):
         self.key_type = key_type
         self.value_type = value_type
         super().__init__(*args, **kwargs)
