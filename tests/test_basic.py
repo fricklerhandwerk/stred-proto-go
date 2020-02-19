@@ -5,7 +5,7 @@ from stred_proto import (Enumeration, Field, Identifier, KeyType, Map, Message,
                          ValueType)
 
 
-def test_instantiation():
+def test_string_representation():
     test_message = Message("MyMessage")
     test_message.fields = [
         TypedField(KeyType.INT32, 1, "broogle"),
@@ -40,6 +40,7 @@ def test_instantiation():
     test_proto.package = "testpackage"
     test_proto.definitions = [test_message, test_enum, test_message2]
 
+    # TODO: actually try to run this through `protoc` to check for validity
     print(test_proto)
 
 

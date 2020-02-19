@@ -139,7 +139,14 @@ class Map(Field):
         super().__init__(*args, **kwargs)
 
     def __str__(self):
-        return f"map<{self.key_type}, {self.value_type}> {super().__str__()}"
+        key_type = self.key_type.value
+
+        def value_type():
+            if isinstance(self.value_type, Definition):
+                return self.value_type.label
+            return self.value_type.value
+
+        return f"map<{key_type}, {value_type()}> {super().__str__()}"
 
 
 class OneOf(Declaration):
@@ -147,7 +154,7 @@ class OneOf(Declaration):
 
     def __str__(self):
         fields = "\n".join([str(f) for f in self.fields])
-        return f"oneof {{{indent(fields)}}}"
+        return f"oneof {self.label} {{{indent(fields)}}}"
 
 
 class Enumeration(Definition):
@@ -219,7 +226,7 @@ class Protocol(Container):
         def package():
             if self.package is None:
                 return []
-            return [f"package = {self.package};"]
+            return [f"package {self.package};"]
 
         return "\n\n".join([syntax] + package() + [str(x) for x in self.definitions])
 
