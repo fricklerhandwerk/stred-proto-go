@@ -49,12 +49,8 @@ class Declaration(Validator):
         self.label.validate()
 
 
-class Fields(collections.MutableSequence):
-    pass
-
-
 class Definition(Declaration):
-    fields: Fields
+    fields: "FieldContainer"
 
 
 class Container():
@@ -89,7 +85,39 @@ class ValueType(Enum):
 Type = Union[KeyType, ValueType, Definition]
 
 
-class Reservation(Validator):
+class FieldContainer(collections.MutableSequence):
+    _fields: List["Field"]
+
+    def __init__(self):
+        self._fields = []
+
+    def __len__(self):
+        return len(self._fields)
+
+    def __getitem__(self, key):
+        return self._fields.__getitem__(key)
+
+    def __setitem__(self, key, value):
+        value.validate()
+        self._fields.__setitem__(key, value)
+
+    def __delitem__(self, key):
+        self._fields.__delitem__(key)
+
+    def insert(self, index, value):
+        value.validate()
+        self._fields.insert(index, value)
+
+    def check_type(self, value, types):
+        if not any([isinstance(value, t) for t in types]):
+            class_name = self.__class__.__name__
+            types_names = ", ".join(t.__name__ for t in types)
+            type_name = type(value).__name__
+            raise ValidationError(
+                f"{class_name} field type must be one of {types_names}, but is {type_name}")
+
+
+class Reservation(FieldContainer, Validator):
     pass
 
 
@@ -102,27 +130,20 @@ class ReservedNumbers(Reservation):
     numbers: List[Union[int, Range]]
 
 
-class ReservedLabels(list, Reservation):
-    def __new__(cls):
-        return super().__new__(cls, [])
-
-    def __setitem__(self, key, value: Union[str, Identifier]):
+class ReservedLabels(Reservation):
+    def __setitem__(self, key, value: Union[str, Identifier]):  # type: ignore
+        self.check_type(value, [str, Identifier])
         if not isinstance(value, Identifier):
             value = Identifier(value)
         value.validate()
         super().__setitem__(key, value)
 
-    def insert(self, key, value: Union[str, Identifier]):
+    def insert(self, index, value: Union[str, Identifier]):
+        self.check_type(value, [str, Identifier])
         if not isinstance(value, Identifier):
             value = Identifier(value)
         value.validate()
-        super().insert(key, value)
-
-    def append(self, value: Union[str, Identifier]):
-        if not isinstance(value, Identifier):
-            value = Identifier(value)
-        value.validate()
-        super().append(value)
+        super().insert(index, value)
 
     def validate(self):
         if not self:
@@ -148,8 +169,9 @@ class Field(Declaration):
         deprecated = " [deprecated=true]" if self.deprecated else ""
         return f"{self.label} = {self.number}{deprecated};"
 
-    def validate(self):
-        super().validate()
+
+class EnumField(Field):
+    pass
 
 
 class TypedField(Field):
@@ -195,25 +217,12 @@ class Map(Field):
         return f"map<{key_type}, {value_type()}> {super().__str__()}"
 
 
-class TypedFields(list, Fields):
-    def __setitem__(self, key, value: Union[TypedField, Reservation]):
-        value.validate()
-        super().__setitem__(key, value)
-
-    def insert(self, key, value: Union[TypedField, Reservation]):
-        value.validate()
-        super().insert(key, value)
-
-    def append(self, value: Union[TypedField, Reservation]):
-        value.validate()
-        super().append(value)
-
-
 class OneOf(Declaration):
-    fields: List[TypedField]
+    class Fields(FieldContainer):
+        pass
 
     def __init__(self):
-        self.fields = TypedFields()
+        self.fields = OneOf.Fields()
         super().__init__()
 
     def __str__(self):
@@ -224,21 +233,19 @@ class OneOf(Declaration):
 class Enumeration(Definition):
     allow_alias: bool
 
-    class F(list, Fields):
-        def __setitem__(self, key, value: Union[Field, Reservation]):
+    class Fields(FieldContainer):
+        def __setitem__(self, key, value: Union[EnumField, Reservation]):  # type: ignore
+            self.check_type(value, [EnumField, Reservation])
             value.validate()
             super().__setitem__(key, value)
 
-        def insert(self, key, value: Union[Field, Reservation]):
+        def insert(self, index, value: Union[Field, Reservation]):
+            self.check_type(value, [EnumField, Reservation])
             value.validate()
-            super().insert(key, value)
-
-        def append(self, value: Union[Field, Reservation]):
-            value.validate()
-            super().append(value)
+            super().insert(index, value)
 
     def __init__(self, *args, **kwargs):
-        self.fields = Enumeration.F()
+        self.fields = Enumeration.Fields()
         self.allow_alias = False
         super().__init__(*args, **kwargs)
 
@@ -247,23 +254,12 @@ class Enumeration(Definition):
         return f"enum {self.label} {{{indent(fields)}}}"
 
 
-class MessageFields(list, Fields):
-    def __setitem__(self, key, value: Union[RepeatableField, Map, OneOf, Reservation]):
-        value.validate()
-        super().__setitem__(key, value)
-
-    def insert(self, key, value: Union[RepeatableField, Map, OneOf, Reservation]):
-        value.validate()
-        super().insert(key, value)
-
-    def append(self, value: Union[RepeatableField, Map, OneOf, Reservation]):
-        value.validate()
-        super().append(value)
-
-
 class Message(Container, Definition):
+    class Fields(FieldContainer):
+        pass
+
     def __init__(self, *args, **kwargs):
-        self.fields = MessageFields()
+        self.fields = Message.Fields()
         super().__init__(*args, **kwargs)
 
     def __str__(self):

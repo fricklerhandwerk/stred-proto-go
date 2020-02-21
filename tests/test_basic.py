@@ -1,6 +1,6 @@
 import pytest
 
-from stred_proto import (Enumeration, Field, KeyType, Map, Message, OneOf,
+from stred_proto import (Enumeration, EnumField, KeyType, Map, Message, OneOf,
                          Protocol, RepeatableField, ReservedLabels, TypedField,
                          ValidationError, ValueType)
 
@@ -25,22 +25,22 @@ def test_string_representation():
     enum = Enumeration()
     enum.label = "MyEnum"
 
-    enum_field1 = Field()
+    enum_field1 = EnumField()
     enum_field1.label = "default"
     enum_field1.number = 0
     enum.fields.append(enum_field1)
 
-    enum_field2 = Field()
+    enum_field2 = EnumField()
     enum_field2.label = "some"
     enum_field2.number = 1
     enum.fields.append(enum_field2)
 
-    enum_field3 = Field()
+    enum_field3 = EnumField()
     enum_field3.label = "thing"
     enum_field3.number = 2
     enum.fields.append(enum_field3)
 
-    enum_field4 = Field()
+    enum_field4 = EnumField()
     enum_field4.label = "redundant"
     enum_field4.number = 2
     enum.fields.append(enum_field3)
@@ -117,7 +117,7 @@ def test_message_set_invalid_identifier():
 def test_enum_fields_mutable_sequence():
     e = Enumeration()
     e.label = "ValidLabel"
-    f = Field()
+    f = EnumField()
     f.number = 1
     f.label = "some_field"
     r = ReservedLabels()
@@ -129,6 +129,6 @@ def test_enum_fields_mutable_sequence():
 
 def test_enum_fields_append_invalid():
     e = Enumeration()
-    f = Field()
+    f = EnumField()
     with pytest.raises(ValidationError):
         e.fields.append(f)
