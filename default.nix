@@ -12,8 +12,19 @@ let
   pkgs = import (nixpkgs) {};
   lib = import "${nixpkgs}/lib";
   pythonPackages = pkgs.python3Packages;
+  goPackages = pkgs.go113Packages;
 in
-setup {
-  inherit pkgs pythonPackages;
-  src = ./.;
+{
+  python = setup {
+    inherit pkgs pythonPackages;
+    src = ./.;
+  };
+  go = pkgs.buildGo113Module {
+    pname = "stred-proto";
+    version = "0.0.0";
+    # will change when `go.mod` changes - trust `nix` and update this with
+    # whatever it comes up with
+    modSha256 = "0sjjj9z1dhilhpc8pq4154czrb79z9cm044jvn75kxcjv6v5l2m5";
+    src = ./.;
+  };
 }
