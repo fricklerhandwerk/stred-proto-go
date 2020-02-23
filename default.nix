@@ -12,7 +12,6 @@ let
   pkgs = import (nixpkgs) {};
   lib = import "${nixpkgs}/lib";
   pythonPackages = pkgs.python3Packages;
-  goPackages = pkgs.go113Packages;
 in
 {
   python = setup {
