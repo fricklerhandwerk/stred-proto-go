@@ -74,3 +74,18 @@ func TestMessageAddField(t *testing.T) {
 	require.Nil(t, err)
 	assert.NotEmpty(t, m.GetFields())
 }
+
+func TestEnumAddField(t *testing.T) {
+	e := protobuf.Enum{}
+	e.SetLabel("testEnum")
+
+	f := protobuf.Enumeration{}
+	err := f.SetLabel("enumValue")
+	require.Nil(t, err)
+	err = f.SetNumber(1)
+	require.Nil(t, err)
+
+	err = e.InsertField(0, f)
+	require.Nil(t, err)
+	assert.NotEmpty(t, e.GetFields())
+}

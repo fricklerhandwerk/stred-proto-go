@@ -101,14 +101,10 @@ type definitionField interface {
 }
 
 type field struct {
-	definitionField
-
 	declaration
 	number     uint
 	deprecated bool
 }
-
-func (f field) _definitionField() {}
 
 func (f field) GetNumber() uint {
 	return f.number
@@ -185,7 +181,6 @@ func (r ReservedLabels) Insert(index uint, n string) error {
 }
 
 type Message struct {
-	definition
 	container
 	fieldType
 
@@ -209,7 +204,7 @@ func (m *Message) InsertField(i uint, value definitionField) error {
 		ok    bool
 	)
 	if field, ok = value.(messageField); !ok {
-		return errors.New(fmt.Sprintf("field must be suitable for message, but is %T", value))
+		return errors.New(fmt.Sprintf("%T does not implement interface `messageField`", value))
 	}
 	switch f := field.(type) {
 	case TypedField:
@@ -225,6 +220,8 @@ func (m *Message) InsertField(i uint, value definitionField) error {
 }
 
 type TypedField struct {
+	messageField
+
 	field
 	_type fieldType
 }
@@ -241,8 +238,6 @@ type fieldType interface {
 	_fieldType()
 }
 
-func (f TypedField) _messageField() {}
-
 type repeatableField struct {
 	TypedField
 	messageField
@@ -258,19 +253,19 @@ func (r repeatableField) getRepeated() bool {
 	return r.repeated
 }
 
-type oneOf struct {
-	declaration
+type OneOf struct {
 	messageField
 
+	declaration
 	fields []TypedField
 	// ...
 }
 
-func (o oneOf) getFields() []TypedField {
+func (o OneOf) GetFields() []definitionField {
 	panic("not implemented")
 }
 
-func (o oneOf) insertField(i uint, f TypedField) error {
+func (o OneOf) InsertField(i uint, f definitionField) error {
 	panic("not implemented")
 }
 
@@ -325,15 +320,44 @@ type messageField interface {
 	_messageField()
 }
 
-type enum struct {
-	definition
+type Enum struct {
 	fieldType
 
+	declaration
 	allowAlias bool
 	fields     []enumField
 }
 
-type enumValue struct {
+func (e Enum) GetFields() []definitionField {
+	out := make([]definitionField, len(e.fields))
+	for i, v := range e.fields {
+		out[i] = v.(definitionField)
+	}
+	return out
+}
+
+func (e *Enum) InsertField(i uint, value definitionField) error {
+	var (
+		field enumField
+		ok    bool
+	)
+	if field, ok = value.(enumField); !ok {
+		return errors.New(fmt.Sprintf("%T does not implement interface `enumField`", value))
+	}
+	switch f := field.(type) {
+	case Enumeration:
+		// <https://github.com/golang/go/wiki/SliceTricks#insert>
+		// <https://stackoverflow.com/a/46130603/5147619>
+		e.fields = append(e.fields, nil)
+		copy(e.fields[i+1:], e.fields[i:])
+		e.fields[i] = f
+	default:
+		panic(fmt.Sprintf("unhandled message field type %T", f))
+	}
+	return nil
+}
+
+type Enumeration struct {
 	enumField
 
 	field
