@@ -23,7 +23,11 @@ in
     version = "0.0.0";
     # will change when `go.mod` changes - trust `nix` and update this with
     # whatever it comes up with
-    modSha256 = "0sjjj9z1dhilhpc8pq4154czrb79z9cm044jvn75kxcjv6v5l2m5";
+    modSha256 = "07h8l5p81695x10fzryjijm42av9nsxg5hzb862n2y0n0irslx8j";
     src = ./.;
+    shellHook = ''
+      # work around <https://github.com/NixOS/nixpkgs/issues/69401>
+      unset GOPATH
+    '';
   };
 }
