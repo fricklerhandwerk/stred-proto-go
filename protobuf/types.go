@@ -101,11 +101,14 @@ type definitionField interface {
 }
 
 type field struct {
-	declaration
+	definitionField
 
+	declaration
 	number     uint
 	deprecated bool
 }
+
+func (f field) _definitionField() {}
 
 func (f field) GetNumber() uint {
 	return f.number
@@ -192,9 +195,37 @@ type Message struct {
 	// ...
 }
 
+func (m Message) GetFields() []definitionField {
+	out := make([]definitionField, len(m.fields))
+	for i, v := range m.fields {
+		out[i] = v.(definitionField)
+	}
+	return out
+}
+
+func (m *Message) InsertField(i uint, value definitionField) error {
+	var (
+		field messageField
+		ok    bool
+	)
+	if field, ok = value.(messageField); !ok {
+		return errors.New(fmt.Sprintf("field must be suitable for message, but is %T", value))
+	}
+	switch f := field.(type) {
+	case TypedField:
+		// <https://github.com/golang/go/wiki/SliceTricks#insert>
+		// <https://stackoverflow.com/a/46130603/5147619>
+		m.fields = append(m.fields, nil)
+		copy(m.fields[i+1:], m.fields[i:])
+		m.fields[i] = f
+	default:
+		panic(fmt.Sprintf("unhandled message field type %T", f))
+	}
+	return nil
+}
+
 type TypedField struct {
 	field
-
 	_type fieldType
 }
 
@@ -209,6 +240,8 @@ func (f *TypedField) SetType(t fieldType) {
 type fieldType interface {
 	_fieldType()
 }
+
+func (f TypedField) _messageField() {}
 
 type repeatableField struct {
 	TypedField
@@ -301,8 +334,9 @@ type enum struct {
 }
 
 type enumValue struct {
-	field
 	enumField
+
+	field
 }
 
 // sum type for enum fields

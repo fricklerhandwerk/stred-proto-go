@@ -57,3 +57,20 @@ func TestTypedFieldSetProperties(t *testing.T) {
 	f.SetType(protobuf.Bytes)
 	assert.Equal(t, protobuf.Bytes, f.GetType())
 }
+
+func TestMessageAddField(t *testing.T) {
+	m := protobuf.Message{}
+	err := m.SetLabel("message")
+	require.Nil(t, err)
+
+	f := protobuf.TypedField{}
+	err = f.SetLabel("messageField")
+	require.Nil(t, err)
+	err = f.SetNumber(1)
+	require.Nil(t, err)
+	f.SetType(protobuf.Bool)
+
+	err = m.InsertField(0, f)
+	require.Nil(t, err)
+	assert.NotEmpty(t, m.GetFields())
+}
