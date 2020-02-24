@@ -6,10 +6,23 @@ import (
 	"regexp"
 )
 
+// TODO: maybe do not export any types at all, but just constructors such as
+// `NewProtocol() protocol`. that way we can enforce setting a parent on types
+// which need one, thus avoiding one source of API usage errors.
 type Protocol struct {
+	definitionContainer // TODO: explicitly implement interface
+
 	_package *identifier
 	imports  []_import
-	services []service
+	// weird naming rules...
+	// 1. service labels share a namespace with message/enum labels
+	// 2. rpc labels and rpc argument/return types share a namespace with
+	//    *unqualified* message/enum labels.  you can only have "rpc Foo" and use
+	//    "message Foo" as an argument/return type in one of your rpcs if you use
+	//    the qualified message label "rpc Foo (package.Foo)", but then you
+	//    *must* have a package name
+	services    []service
+	definitions []definition
 }
 
 func (p Protocol) GetPackage() *identifier {
@@ -25,12 +38,25 @@ func (p *Protocol) SetPackage(pkg string) error {
 	return nil
 }
 
+func (p Protocol) validateLabel(l identifier) error {
+	for _, d := range p.definitions {
+		if d.GetLabel() == l.String() {
+			return errors.New(fmt.Sprintf("label %s already declared", l.String()))
+		}
+	}
+	return nil
+}
+
+// TODO: probably there is no need to have an extra type here, and validation
+// can be done in a function
 type identifier string
 
 func (i identifier) validate() error {
 	pattern := "[a-zA-Z]([0-9a-zA-Z_])*"
 	regex := regexp.MustCompile(fmt.Sprintf("^%s$", pattern))
 	if !regex.MatchString(i.String()) {
+		// TODO: there are at least two sources of errors which should be
+		// differentiated by type: API caller and user
 		return errors.New(fmt.Sprintf("Identifier must match %s", pattern))
 	}
 	return nil
@@ -57,42 +83,66 @@ func (i _import) SetPublic(b bool) {
 }
 
 type service struct {
+	label
 	rpcs []rpc
 }
 
 type rpc struct {
-	declaration
+	label
 	requestType    *Message
 	streamRequest  bool
 	responseType   *Message
 	streamResponse bool
 }
 
-type declaration struct {
-	label identifier
+type declarationContainer interface {
+	validateLabel(identifier) error
 }
 
-func (d declaration) GetLabel() string {
+type declaration interface {
+	GetLabel() string
+	SetLabel(string) error
+}
+
+type label struct {
+	label  identifier
+	parent declarationContainer
+}
+
+func (d label) GetLabel() string {
 	return d.label.String()
 }
 
-func (d *declaration) SetLabel(label string) error {
+func (d *label) SetLabel(label string) error {
 	ident := identifier(label)
 	if err := ident.validate(); err != nil {
+		return err
+	}
+	if d.parent == nil {
+		return errors.New("declaration has no parent")
+	}
+	if err := d.parent.validateLabel(ident); err != nil {
 		return err
 	}
 	d.label = ident
 	return nil
 }
 
-type container interface {
+type definitionContainer interface {
+	declarationContainer
+
 	getDefinitions() []definition
 	insertDefinition(index uint, def definition) error
 }
 
 type definition interface {
+	declaration
+	declarationContainer
+
 	GetFields() []definitionField
 	InsertField(index uint, f definitionField) error
+	SetParent(p definitionContainer) error
+	validateNumber(fieldNumber) error
 }
 
 // sum type for fields in definitions
@@ -101,17 +151,29 @@ type definitionField interface {
 }
 
 type field struct {
-	declaration
+	label
 	number     uint
 	deprecated bool
+	parent     definition
+}
+
+func (f *field) SetParent(d definition) error {
+	if d == nil {
+		return errors.New("parent must not be nil")
+	}
+	f.label.parent = d
+	f.parent = d
+	return nil
 }
 
 func (f field) GetNumber() uint {
-	return f.number
+	return uint(f.number)
 }
 
 func (f *field) SetNumber(n uint) error {
-	// TODO: validate based on parent
+	if err := f.parent.validateNumber(number(n)); err != nil {
+		return err
+	}
 	f.number = n
 	return nil
 }
@@ -154,6 +216,7 @@ func (r numberRange) SetEnd(e uint) error {
 	return nil
 }
 
+// sum type for field numbering
 type fieldNumber interface {
 	_fieldNumber()
 }
@@ -169,6 +232,8 @@ func (r ReservedNumbers) Insert(index uint, n fieldNumber) error {
 	panic("not implemented")
 }
 
+func (r ReservedNumbers) _definitionField() {}
+
 type ReservedLabels struct {
 	messageField
 	enumField
@@ -176,18 +241,35 @@ type ReservedLabels struct {
 	labels []identifier
 }
 
+func (r ReservedLabels) Get() []string {
+	panic("not implemented")
+}
+
 func (r ReservedLabels) Insert(index uint, n string) error {
 	panic("not implemented")
 }
 
+func (r ReservedLabels) _definitionField() {}
+
 type Message struct {
-	container
 	fieldType
 
-	declaration
+	label
 	fields      []messageField
 	definitions []definition
-	// ...
+	parent      definitionContainer
+}
+
+func (m *Message) SetParent(d definitionContainer) error {
+	if d == nil {
+		return errors.New("parent must not be nil")
+	}
+	if v, ok := d.(*Message); ok && m == v {
+		return errors.New("message cannot be parent of itself")
+	}
+	m.label.parent = d
+	m.parent = d
+	return nil
 }
 
 func (m Message) GetFields() []definitionField {
@@ -199,6 +281,7 @@ func (m Message) GetFields() []definitionField {
 }
 
 func (m *Message) InsertField(i uint, value definitionField) error {
+	// TODO: let field self-validate
 	var (
 		field messageField
 		ok    bool
@@ -217,6 +300,61 @@ func (m *Message) InsertField(i uint, value definitionField) error {
 		panic(fmt.Sprintf("unhandled message field type %T", f))
 	}
 	return nil
+}
+
+func (m Message) getDefinitions() []definition {
+	panic("not implemented")
+}
+
+func (m *Message) insertDefinition(i uint, d definition) error {
+	panic("not implemented")
+}
+
+func (m Message) validateLabel(l identifier) error {
+	for _, f := range m.fields {
+		switch field := f.(type) {
+		case TypedField:
+			if field.GetLabel() == l.String() {
+				return errors.New(fmt.Sprintf("label %s already declared", l.String()))
+			}
+		default:
+			panic(fmt.Sprintf("unhandled message field type %T", f))
+		}
+	}
+	return nil
+}
+
+func (m Message) validateNumber(f fieldNumber) error {
+	switch n := f.(type) {
+	case number:
+		return m.validateNumberSingle(n)
+	case numberRange:
+		return m.validateNumberRange(n)
+	default:
+		panic(fmt.Sprintf("unhandled field number type %T", f))
+	}
+}
+
+func (m Message) validateNumberSingle(n number) error {
+	for _, f := range m.fields {
+		switch field := f.(type) {
+		case TypedField:
+			if field.GetNumber() == uint(n) {
+				return errors.New(fmt.Sprintf("field number %d already in use", uint(n)))
+			}
+		case ReservedNumbers:
+			panic("not implemented")
+		case ReservedLabels:
+			continue
+		default:
+			panic(fmt.Sprintf("unhandled message field type %T", f))
+		}
+	}
+	return nil
+}
+
+func (m Message) validateNumberRange(n numberRange) error {
+	panic("not implemented")
 }
 
 type TypedField struct {
@@ -256,7 +394,7 @@ func (r repeatableField) getRepeated() bool {
 type OneOf struct {
 	messageField
 
-	declaration
+	label
 	fields []TypedField
 	// ...
 }
@@ -323,9 +461,19 @@ type messageField interface {
 type Enum struct {
 	fieldType
 
-	declaration
+	label
 	allowAlias bool
 	fields     []enumField
+	parent     definitionContainer
+}
+
+func (e *Enum) AllowAlias(b bool) error {
+	if !b && e.allowAlias {
+		// check if aliasing is in place
+		panic("check for deactivating enum aliasing not implemented")
+	}
+	e.allowAlias = b
+	return nil
 }
 
 func (e Enum) GetFields() []definitionField {
@@ -337,6 +485,7 @@ func (e Enum) GetFields() []definitionField {
 }
 
 func (e *Enum) InsertField(i uint, value definitionField) error {
+	// TODO: let field self-validate
 	var (
 		field enumField
 		ok    bool
@@ -355,6 +504,71 @@ func (e *Enum) InsertField(i uint, value definitionField) error {
 		panic(fmt.Sprintf("unhandled message field type %T", f))
 	}
 	return nil
+}
+
+func (e *Enum) SetParent(d definitionContainer) error {
+	if d == nil {
+		return errors.New("parent is nil")
+	}
+	e.label.parent = d
+	e.parent = d
+	return nil
+}
+
+func (e Enum) validateLabel(l identifier) error {
+	for _, f := range e.fields {
+		switch field := f.(type) {
+		case Enumeration:
+			if field.GetLabel() == l.String() {
+				return errors.New(fmt.Sprintf("label %s already declared", l.String()))
+			}
+		case ReservedLabels:
+			for _, r := range field.Get() {
+				if r == l.String() {
+					return errors.New(fmt.Sprintf("label %s already declared", l.String()))
+				}
+			}
+		case ReservedNumbers:
+			continue
+		default:
+			panic(fmt.Sprintf("unhandled message field type %T", f))
+		}
+	}
+	return nil
+}
+
+func (e Enum) validateNumber(f fieldNumber) error {
+	switch n := f.(type) {
+	case number:
+		return e.validateNumberSingle(n)
+	case numberRange:
+		return e.validateNumberRange(n)
+	default:
+		panic(fmt.Sprintf("unhandled field number type %T", f))
+	}
+}
+
+func (e Enum) validateNumberSingle(n number) error {
+	for _, f := range e.fields {
+		switch field := f.(type) {
+		case Enumeration:
+			if !e.allowAlias && field.GetNumber() == uint(n) {
+				return errors.New(fmt.Sprintf(`field number %d already in use.\
+        set "allow_alias = true" to allow multiple labels for one number.`, uint(n)))
+			}
+		case ReservedNumbers:
+			panic("not implemented")
+		case ReservedLabels:
+			continue
+		default:
+			panic(fmt.Sprintf("unhandled message field type %T", f))
+		}
+	}
+	return nil
+}
+
+func (e Enum) validateNumberRange(n numberRange) error {
+	panic("not implemented")
 }
 
 type Enumeration struct {

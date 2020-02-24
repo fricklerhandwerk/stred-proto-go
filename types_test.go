@@ -25,6 +25,8 @@ func TestProtocolSetInvalidPackage(t *testing.T) {
 
 func TestMessageSetLabel(t *testing.T) {
 	m := protobuf.Message{}
+	p := protobuf.Protocol{}
+	m.SetParent(p)
 	err := m.SetLabel("message")
 	require.Nil(t, err)
 	assert.Equal(t, "message", m.GetLabel())
@@ -32,13 +34,25 @@ func TestMessageSetLabel(t *testing.T) {
 
 func TestMessageSetInvalidPackage(t *testing.T) {
 	m := protobuf.Message{}
-	err := m.SetLabel("message!")
+
+	// validation without parent
+	err := m.SetLabel("message")
+	require.NotNil(t, err)
+	assert.Empty(t, m.GetLabel())
+
+	// malformed identifier
+	p := protobuf.Protocol{}
+	m.SetParent(&p)
+	err = m.SetLabel("message!")
 	require.NotNil(t, err)
 	assert.Empty(t, m.GetLabel())
 }
 
 func TestTypedFieldSetProperties(t *testing.T) {
+	m := protobuf.Message{}
+
 	f := protobuf.TypedField{}
+	f.SetParent(&m)
 
 	err := f.SetLabel("typedField")
 	require.Nil(t, err)
@@ -59,11 +73,14 @@ func TestTypedFieldSetProperties(t *testing.T) {
 }
 
 func TestMessageAddField(t *testing.T) {
+	p := protobuf.Protocol{}
 	m := protobuf.Message{}
+	m.SetParent(&p)
 	err := m.SetLabel("message")
 	require.Nil(t, err)
 
 	f := protobuf.TypedField{}
+	f.SetParent(&m)
 	err = f.SetLabel("messageField")
 	require.Nil(t, err)
 	err = f.SetNumber(1)
@@ -77,9 +94,9 @@ func TestMessageAddField(t *testing.T) {
 
 func TestEnumAddField(t *testing.T) {
 	e := protobuf.Enum{}
-	e.SetLabel("testEnum")
 
 	f := protobuf.Enumeration{}
+	f.SetParent(&e)
 	err := f.SetLabel("enumValue")
 	require.Nil(t, err)
 	err = f.SetNumber(1)
@@ -88,4 +105,44 @@ func TestEnumAddField(t *testing.T) {
 	err = e.InsertField(0, f)
 	require.Nil(t, err)
 	assert.NotEmpty(t, e.GetFields())
+}
+
+func TestEnumerationSetInvalidProperties(t *testing.T) {
+	e := protobuf.Enum{}
+
+	f1 := protobuf.Enumeration{}
+	err := f1.SetParent(&e)
+	require.Nil(t, err)
+	err = f1.SetLabel("enumValue1")
+	require.Nil(t, err)
+	err = f1.SetNumber(1)
+	require.Nil(t, err)
+
+	// do not forget to add the field to the definition!
+	err = e.InsertField(0, f1)
+	require.Nil(t, err)
+
+	f2 := protobuf.Enumeration{}
+	err = f2.SetParent(&e)
+	require.Nil(t, err)
+
+	// duplicate label
+	err = f2.SetLabel("enumValue1")
+	require.NotNil(t, err)
+	err = f2.SetLabel("enumValue2")
+	require.Nil(t, err)
+
+	//duplicate field number
+	err = f2.SetNumber(1)
+	require.NotNil(t, err)
+	err = f2.SetNumber(2)
+	require.Nil(t, err)
+
+	// duplicate field number with "allow_alias = true"
+	err = e.AllowAlias(true)
+	require.Nil(t, err)
+	err = f2.SetNumber(1)
+	require.Nil(t, err)
+
+	// TODO: try to deactivate aliasing with aliased fields in place
 }
