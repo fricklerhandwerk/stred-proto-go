@@ -66,7 +66,9 @@ func (i identifier) validate() error {
 	regex := regexp.MustCompile(fmt.Sprintf("^%s$", pattern))
 	if !regex.MatchString(i.String()) {
 		// TODO: there are at least two sources of errors which should be
-		// differentiated by type: API caller and user
+		// differentiated by type: API caller and user. maybe API usage errors
+		// should even result in a panic, since a nonsensical operation due to
+		// broken implementation simply must not be allowed.
 		return errors.New(fmt.Sprintf("Identifier must match %s", pattern))
 	}
 	return nil
@@ -149,15 +151,8 @@ type definition interface {
 	declaration
 	declarationContainer
 
-	GetFields() []definitionField
-	InsertField(index uint, f definitionField) error
 	SetParent(p definitionContainer) error
 	validateNumber(fieldNumber) error
-}
-
-// sum type for fields in definitions
-type definitionField interface {
-	_definitionField()
 }
 
 type field struct {
@@ -201,7 +196,6 @@ type number uint
 func (n number) _fieldNumber() {}
 
 type numberRange struct {
-	fieldNumber
 	start uint
 	end   uint
 }
@@ -226,15 +220,16 @@ func (r numberRange) SetEnd(e uint) error {
 	return nil
 }
 
+func (r numberRange) _fieldNumber() {}
+
 // sum type for field numbering
 type fieldNumber interface {
+	// TODO: define actually useful behavior, such as checking intersection with
+	// a value of the same type, which is needed for validation
 	_fieldNumber()
 }
 
 type ReservedNumbers struct {
-	messageField
-	enumField
-
 	numbers []fieldNumber
 }
 
@@ -242,12 +237,15 @@ func (r ReservedNumbers) Insert(index uint, n fieldNumber) error {
 	panic("not implemented")
 }
 
-func (r ReservedNumbers) _definitionField() {}
+func (e ReservedNumbers) validateAsEnumField() error {
+	panic("not implemented")
+}
+
+func (e ReservedNumbers) validateAsMessageField() error {
+	panic("not implemented")
+}
 
 type ReservedLabels struct {
-	messageField
-	enumField
-
 	labels []identifier
 }
 
@@ -259,11 +257,15 @@ func (r ReservedLabels) Insert(index uint, n string) error {
 	panic("not implemented")
 }
 
-func (r ReservedLabels) _definitionField() {}
+func (r ReservedLabels) validateAsEnumField() error {
+	panic("not implemented")
+}
+
+func (r ReservedLabels) validateAsMessageField() error {
+	panic("not implemented")
+}
 
 type Message struct {
-	fieldType
-
 	label
 	fields      []messageField
 	definitions []definition
@@ -282,23 +284,12 @@ func (m *Message) SetParent(d definitionContainer) error {
 	return nil
 }
 
-func (m Message) GetFields() []definitionField {
-	out := make([]definitionField, len(m.fields))
-	for i, v := range m.fields {
-		out[i] = v.(definitionField)
-	}
-	return out
+func (m Message) GetFields() []messageField {
+	return m.fields
 }
 
-func (m *Message) InsertField(i uint, value definitionField) error {
+func (m *Message) InsertField(i uint, field messageField) error {
 	// TODO: let field self-validate
-	var (
-		field messageField
-		ok    bool
-	)
-	if field, ok = value.(messageField); !ok {
-		return errors.New(fmt.Sprintf("%T does not implement interface `messageField`", value))
-	}
 	switch f := field.(type) {
 	case TypedField:
 		// <https://github.com/golang/go/wiki/SliceTricks#insert>
@@ -367,6 +358,8 @@ func (m Message) validateNumberRange(n numberRange) error {
 	panic("not implemented")
 }
 
+func (m *Message) _fieldType() {}
+
 type TypedField struct {
 	messageField
 
@@ -409,11 +402,11 @@ type OneOf struct {
 	// ...
 }
 
-func (o OneOf) GetFields() []definitionField {
+func (o OneOf) GetFields() []TypedField {
 	panic("not implemented")
 }
 
-func (o OneOf) InsertField(i uint, f definitionField) error {
+func (o OneOf) InsertField(i uint, f TypedField) error {
 	panic("not implemented")
 }
 
@@ -463,14 +456,10 @@ func (v valueType) _fieldType() {}
 
 // sum type for message fields
 type messageField interface {
-	definitionField
-
-	_messageField()
+	validateAsMessageField() error
 }
 
 type Enum struct {
-	fieldType
-
 	label
 	allowAlias bool
 	fields     []enumField
@@ -486,23 +475,12 @@ func (e *Enum) AllowAlias(b bool) error {
 	return nil
 }
 
-func (e Enum) GetFields() []definitionField {
-	out := make([]definitionField, len(e.fields))
-	for i, v := range e.fields {
-		out[i] = v.(definitionField)
-	}
-	return out
+func (e Enum) GetFields() []enumField {
+	return e.fields
 }
 
-func (e *Enum) InsertField(i uint, value definitionField) error {
+func (e *Enum) InsertField(i uint, field enumField) error {
 	// TODO: let field self-validate
-	var (
-		field enumField
-		ok    bool
-	)
-	if field, ok = value.(enumField); !ok {
-		return errors.New(fmt.Sprintf("%T does not implement interface `enumField`", value))
-	}
 	switch f := field.(type) {
 	case Enumeration:
 		// <https://github.com/golang/go/wiki/SliceTricks#insert>
@@ -581,15 +559,17 @@ func (e Enum) validateNumberRange(n numberRange) error {
 	panic("not implemented")
 }
 
-type Enumeration struct {
-	enumField
+func (e *Enum) _fieldType() {}
 
+type Enumeration struct {
 	field
+}
+
+func (e Enumeration) validateAsEnumField() error {
+	panic("not implemented")
 }
 
 // sum type for enum fields
 type enumField interface {
-	definitionField
-
-	_enumField()
+	validateAsEnumField() error
 }
