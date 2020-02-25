@@ -26,7 +26,7 @@ func TestProtocolSetInvalidPackage(t *testing.T) {
 func TestMessageSetLabel(t *testing.T) {
 	m := protobuf.Message{}
 	p := protobuf.Protocol{}
-	m.SetParent(p)
+	m.SetParent(&p)
 	err := m.SetLabel("message")
 	require.Nil(t, err)
 	assert.Equal(t, "message", m.GetLabel())

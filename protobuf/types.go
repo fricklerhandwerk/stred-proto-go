@@ -10,8 +10,6 @@ import (
 // `NewProtocol() protocol`. that way we can enforce setting a parent on types
 // which need one, thus avoiding one source of API usage errors.
 type Protocol struct {
-	definitionContainer // TODO: explicitly implement interface
-
 	_package *identifier
 	imports  []_import
 	// weird naming rules...
@@ -45,6 +43,18 @@ func (p Protocol) validateLabel(l identifier) error {
 		}
 	}
 	return nil
+}
+
+func (p Protocol) getDefinitions() []definition {
+	out := make([]definition, len(p.definitions))
+	for i, v := range p.definitions {
+		out[i] = v.(definition)
+	}
+	return out
+}
+
+func (p *Protocol) insertDefinition(i uint, d definition) error {
+	panic("not implemented")
 }
 
 // TODO: probably there is no need to have an extra type here, and validation
