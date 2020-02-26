@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"strings"
 )
 
 // TODO: maybe do not export any types at all, but just constructors such as
@@ -345,7 +346,7 @@ func (m Message) validateLabel(l identifier) error {
 		switch field := f.(type) {
 		case TypedField:
 			if field.GetLabel() == l.String() {
-				return errors.New(fmt.Sprintf("label %s already declared", l.String()))
+				return errors.New(fmt.Sprintf("label %q already declared", l.String()))
 			}
 		default:
 			panic(fmt.Sprintf("unhandled message field type %T", f))
@@ -573,8 +574,11 @@ func (e Enum) validateNumberSingle(n number) error {
 		switch field := f.(type) {
 		case Enumeration:
 			if !e.allowAlias && field.GetNumber() == uint(n) {
-				return errors.New(fmt.Sprintf(`field number %d already in use.\
-        set "allow_alias = true" to allow multiple labels for one number.`, uint(n)))
+				lines := []string{
+					fmt.Sprintf("field number %d already in use.", uint(n)),
+					fmt.Sprintf("set %q to allow multiple labels for one number.", "allow_alias = true"),
+				}
+				return errors.New(strings.Join(lines, " "))
 			}
 		case ReservedNumbers:
 			panic("not implemented")

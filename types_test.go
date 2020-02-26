@@ -146,3 +146,32 @@ func TestEnumerationSetInvalidProperties(t *testing.T) {
 
 	// TODO: try to deactivate aliasing with aliased fields in place
 }
+
+func TestMessageAddInvalidFields(t *testing.T) {
+	m := protobuf.Message{}
+
+	f1 := protobuf.TypedField{}
+	f1.SetParent(&m)
+	err := f1.SetLabel("messageField")
+	require.Nil(t, err)
+	err = f1.SetNumber(1)
+	require.Nil(t, err)
+	f1.SetType(protobuf.Bool)
+
+	m.InsertField(0, f1)
+
+	// duplicate label
+	f2 := protobuf.TypedField{}
+	f2.SetParent(&m)
+	err = f2.SetLabel("messageField")
+	require.NotNil(t, err)
+	err = f2.SetNumber(2)
+	assert.Nil(t, err)
+	f2.SetType(protobuf.Bool)
+
+	// duplicate field number
+	err = f2.SetLabel("messageField2")
+	require.Nil(t, err)
+	err = f2.SetNumber(1)
+	assert.NotNil(t, err)
+}
