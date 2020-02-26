@@ -193,7 +193,23 @@ func (f *field) SetDeprecated(b bool) {
 
 type number uint
 
-func (n number) _fieldNumber() {}
+func (n number) intersects(other []fieldNumber) bool {
+	for _, o := range other {
+		switch v := o.(type) {
+		case number:
+			if n == o {
+				return true
+			}
+		case numberRange:
+			if uint(n) >= v.start || uint(n) <= v.end {
+				return true
+			}
+		default:
+			panic(fmt.Sprintf("unhandled fieldNumber type %T", v))
+		}
+	}
+	return false
+}
 
 type numberRange struct {
 	start uint
@@ -220,13 +236,26 @@ func (r numberRange) SetEnd(e uint) error {
 	return nil
 }
 
-func (r numberRange) _fieldNumber() {}
+func (r numberRange) intersects(other []fieldNumber) bool {
+	for _, o := range other {
+		switch v := o.(type) {
+		case number:
+			if uint(v) >= r.start || uint(v) <= r.end {
+				return true
+			}
+		case numberRange:
+			if (v.start >= r.start && v.start <= r.end) || (v.end >= r.start && v.end <= r.end) {
+				return true
+			}
+		default:
+			panic(fmt.Sprintf("unhandled fieldNumber type %T", v))
+		}
+	}
+	return false
+}
 
-// sum type for field numbering
 type fieldNumber interface {
-	// TODO: define actually useful behavior, such as checking intersection with
-	// a value of the same type, which is needed for validation
-	_fieldNumber()
+	intersects([]fieldNumber) bool
 }
 
 type ReservedNumbers struct {
@@ -326,6 +355,8 @@ func (m Message) validateLabel(l identifier) error {
 }
 
 func (m Message) validateNumber(f fieldNumber) error {
+	// TODO: check valid values
+	// https://developers.google.com/protocol-buffers/docs/proto3#assigning-field-numbers
 	switch n := f.(type) {
 	case number:
 		return m.validateNumberSingle(n)
@@ -454,7 +485,6 @@ const (
 
 func (v valueType) _fieldType() {}
 
-// sum type for message fields
 type messageField interface {
 	validateAsMessageField() error
 }
@@ -526,6 +556,8 @@ func (e Enum) validateLabel(l identifier) error {
 }
 
 func (e Enum) validateNumber(f fieldNumber) error {
+	// TODO: check valid values
+	// https://developers.google.com/protocol-buffers/docs/proto3#assigning-field-numbers
 	switch n := f.(type) {
 	case number:
 		return e.validateNumberSingle(n)
@@ -569,7 +601,6 @@ func (e Enumeration) validateAsEnumField() error {
 	panic("not implemented")
 }
 
-// sum type for enum fields
 type enumField interface {
 	validateAsEnumField() error
 }
