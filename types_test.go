@@ -141,10 +141,14 @@ func TestEnumerationSetInvalidProperties(t *testing.T) {
 	// duplicate field number with "allow_alias = true"
 	err = e.AllowAlias(true)
 	require.Nil(t, err)
+
+	// try to disable aliasing with duplicate field numbers
+
 	err = f2.SetNumber(1)
 	require.Nil(t, err)
-
-	// TODO: try to deactivate aliasing with aliased fields in place
+	e.InsertField(1, f2)
+	err = e.AllowAlias(false)
+	require.NotNil(t, err)
 }
 
 func TestMessageAddInvalidFields(t *testing.T) {

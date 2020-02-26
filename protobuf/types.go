@@ -500,7 +500,23 @@ type Enum struct {
 func (e *Enum) AllowAlias(b bool) error {
 	if !b && e.allowAlias {
 		// check if aliasing is in place
-		panic("check for deactivating enum aliasing not implemented")
+		numbers := make(map[uint]bool, len(e.fields))
+		for _, field := range e.fields {
+			switch f := field.(type) {
+			case Enumeration:
+				n := f.GetNumber()
+				if numbers[n] {
+					lines := []string{fmt.Sprintf(
+						"field number %d is used multiple times.", n),
+						"remove aliasing before disallowing it.",
+					}
+					return errors.New(strings.Join(lines, " "))
+				}
+				numbers[n] = true
+			default:
+				continue
+			}
+		}
 	}
 	e.allowAlias = b
 	return nil
