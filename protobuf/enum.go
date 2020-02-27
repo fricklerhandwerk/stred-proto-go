@@ -14,6 +14,7 @@ type enum struct {
 }
 
 type enumField interface {
+	InsertIntoParent(uint) error
 	validateAsEnumField() error
 }
 
@@ -52,21 +53,17 @@ func (e enum) GetFields() []enumField {
 	return e.fields
 }
 
-func (e *enum) InsertField(i uint, field enumField) error {
-	if err := field.validateAsEnumField(); err != nil {
-		return err
-	}
+func (e *enum) insertField(i uint, field enumField) {
 	// <https://github.com/golang/go/wiki/SliceTricks#insert>
 	// <https://stackoverflow.com/a/46130603/5147619>
 	e.fields = append(e.fields, nil)
 	copy(e.fields[i+1:], e.fields[i:])
 	e.fields[i] = field
-
-	return nil
 }
 
 func (e *enum) NewField() *enumeration {
 	return &enumeration{
+		parent: e,
 		field: field{
 			parent: e,
 			label: label{
@@ -87,7 +84,7 @@ func (e enum) validateLabel(l identifier) error {
 				return errors.New(fmt.Sprintf("label %s already declared", l.String()))
 			}
 		case *reservedLabels:
-			for _, r := range field.Get() {
+			for _, r := range field.GetLabels() {
 				if r == l.String() {
 					return errors.New(fmt.Sprintf("label %s already declared", l.String()))
 				}
@@ -140,12 +137,13 @@ func (e enum) validateNumberRange(n numberRange) error {
 	panic("not implemented")
 }
 
-func (e enum) validateAsDefinition() (err error) {
+func (e *enum) InsertIntoParent(i uint) (err error) {
 	err = e.parent.validateLabel(identifier(e.GetLabel()))
 	if err != nil {
 		// TODO: still counting on this becoming a panic instead
 		return
 	}
+	e.parent.insertDefinition(i, e)
 	return
 }
 
@@ -153,17 +151,25 @@ func (e *enum) _fieldType() {}
 
 type enumeration struct {
 	field
+	parent *enum
+}
+
+func (e *enumeration) InsertIntoParent(i uint) error {
+	if err := e.validateAsEnumField(); err != nil {
+		// TODO: still counting on this becoming a panic instead
+		return err
+	}
+	e.parent.insertField(i, e)
+	return nil
 }
 
 func (e enumeration) validateAsEnumField() (err error) {
 	err = e.parent.validateLabel(identifier(e.GetLabel()))
 	if err != nil {
-		// TODO: still counting on this becoming a panic instead
 		return err
 	}
 	err = e.parent.validateNumber(number(e.GetNumber()))
 	if err != nil {
-		// TODO: still counting on this becoming a panic instead
 		return err
 	}
 	return nil

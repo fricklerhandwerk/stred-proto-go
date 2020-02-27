@@ -13,6 +13,7 @@ type message struct {
 }
 
 type messageField interface {
+	InsertIntoParent(uint) error
 	validateAsMessageField() error
 }
 
@@ -20,22 +21,10 @@ func (m message) GetFields() []messageField {
 	return m.fields
 }
 
-// TODO: this is a bad interface, as it requires checking that the parent of
-// the inserted field is really this message. instead wie should have
-// `field.Insert(uint) error {}`, which may call its parent, which is the right
-// thing by construction, to do the work.
-// doing it that way has the added benifit that self-validation semantics are
-// contained in the child type instead of calling the child from here, which
-// calls the parent again.
-func (m *message) InsertField(i uint, field messageField) error {
-	if err := field.validateAsMessageField(); err != nil {
-		return err
-	}
+func (m *message) insertField(i uint, field messageField) {
 	m.fields = append(m.fields, nil)
 	copy(m.fields[i+1:], m.fields[i:])
 	m.fields[i] = field
-
-	return nil
 }
 
 func (m *message) newTypedField() *typedField {
@@ -51,12 +40,14 @@ func (m *message) newTypedField() *typedField {
 
 func (m *message) NewField() *repeatableField {
 	return &repeatableField{
+		parent:     m,
 		typedField: *m.newTypedField(),
 	}
 }
 
 func (m *message) NewMap() *mapField {
 	return &mapField{
+		parent:     m,
 		typedField: *m.newTypedField(),
 	}
 }
@@ -92,16 +83,17 @@ func (m message) GetDefinitions() []definition {
 	panic("not implemented")
 }
 
-func (m *message) InsertDefinition(i uint, d definition) error {
+func (m *message) insertDefinition(i uint, d definition) {
 	panic("not implemented")
 }
 
-func (m message) validateAsDefinition() (err error) {
+func (m *message) InsertIntoParent(i uint) (err error) {
 	err = m.parent.validateLabel(identifier(m.GetLabel()))
 	if err != nil {
 		// TODO: still counting on this becoming a panic instead
 		return
 	}
+	m.parent.insertDefinition(i, m)
 	return
 }
 

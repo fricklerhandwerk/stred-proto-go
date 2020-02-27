@@ -19,7 +19,7 @@ type definitionContainer interface {
 	declarationContainer
 
 	GetDefinitions() []definition
-	InsertDefinition(index uint, def definition) error
+	insertDefinition(index uint, def definition)
 }
 
 type definition interface {
@@ -27,7 +27,7 @@ type definition interface {
 	declarationContainer
 
 	validateNumber(fieldNumber) error
-	validateAsDefinition() error
+	InsertIntoParent(uint) error
 }
 
 // TODO: probably there is no need to have an extra type here, and validation

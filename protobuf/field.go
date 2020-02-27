@@ -49,26 +49,33 @@ func (f *typedField) SetType(t fieldType) {
 type repeatableField struct {
 	typedField
 
+	parent   *message
 	repeated bool
 }
 
-func (r repeatableField) setRepeated(repeat bool) {
+func (r repeatableField) SetRepeated(repeat bool) {
 	r.repeated = repeat
 }
 
-func (r repeatableField) getRepeated() bool {
+func (r repeatableField) GetRepeated() bool {
 	return r.repeated
+}
+
+func (r *repeatableField) InsertIntoParent(i uint) error {
+	if err := r.validateAsMessageField(); err != nil {
+		return err
+	}
+	r.parent.insertField(i, r)
+	return nil
 }
 
 func (r repeatableField) validateAsMessageField() (err error) {
 	err = r.parent.validateLabel(identifier(r.GetLabel()))
 	if err != nil {
-		// TODO: still counting on this becoming a panic instead
 		return err
 	}
 	err = r.parent.validateNumber(number(r.GetNumber()))
 	if err != nil {
-		// TODO: still counting on this becoming a panic instead
 		return err
 	}
 	if r._type == nil {
@@ -91,6 +98,14 @@ func (o oneOf) InsertField(i uint, f typedField) error {
 	panic("not implemented")
 }
 
+func (o *oneOf) InsertIntoParent(i uint) error {
+	if err := o.validateAsMessageField(); err != nil {
+		return err
+	}
+	o.parent.insertField(i, o)
+	return nil
+}
+
 func (o *oneOf) validateAsMessageField() error {
 	panic("not implemented")
 }
@@ -98,7 +113,8 @@ func (o *oneOf) validateAsMessageField() error {
 type mapField struct {
 	typedField
 
-	key keyType
+	parent *message
+	key    keyType
 }
 
 func (m mapField) GetKeyType() keyType {
@@ -109,19 +125,28 @@ func (m mapField) SetKeyType(k keyType) {
 	m.key = k
 }
 
+func (m *mapField) InsertIntoParent(i uint) error {
+	if err := m.validateAsMessageField(); err != nil {
+		return err
+	}
+	m.parent.insertField(i, m)
+	return nil
+}
+
 func (m *mapField) validateAsMessageField() error {
 	err := m.parent.validateLabel(identifier(m.GetLabel()))
 	if err != nil {
-		// TODO: still counting on this becoming a panic instead
 		return err
 	}
 	err = m.parent.validateNumber(number(m.GetNumber()))
 	if err != nil {
-		// TODO: still counting on this becoming a panic instead
 		return err
 	}
 	if m._type == nil {
-		return errors.New("message field type not set")
+		return errors.New("map value type not set")
+	}
+	if m.key == "" {
+		return errors.New("map key type not set")
 	}
 	return nil
 }

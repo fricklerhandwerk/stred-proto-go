@@ -28,7 +28,8 @@ func TestProtocolDuplicateLabelsForMessageAndService(t *testing.T) {
 	m := p.NewMessage()
 	err := m.SetLabel("foo")
 	require.Nil(t, err)
-	p.InsertDefinition(0, m)
+	err = m.InsertIntoParent(0)
+	require.Nil(t, err)
 	s := p.NewService()
 	err = s.SetLabel("foo")
 	assert.NotNil(t, err)
@@ -85,7 +86,7 @@ func TestMessageAddField(t *testing.T) {
 	require.Nil(t, err)
 	f.SetType(protobuf.Bool)
 
-	err = m.InsertField(0, f)
+	err = f.InsertIntoParent(0)
 	require.Nil(t, err)
 	assert.NotEmpty(t, m.GetFields())
 }
@@ -99,7 +100,7 @@ func TestEnumAddField(t *testing.T) {
 	err = f.SetNumber(1)
 	require.Nil(t, err)
 
-	err = e.InsertField(0, f)
+	err = f.InsertIntoParent(0)
 	require.Nil(t, err)
 	assert.NotEmpty(t, e.GetFields())
 }
@@ -114,7 +115,7 @@ func TestEnumerationSetInvalidProperties(t *testing.T) {
 	require.Nil(t, err)
 
 	// do not forget to add the first field to the enum!
-	err = e.InsertField(0, f1)
+	err = f1.InsertIntoParent(0)
 	require.Nil(t, err)
 
 	// duplicate label
@@ -137,7 +138,8 @@ func TestEnumerationSetInvalidProperties(t *testing.T) {
 	// try to disable aliasing with duplicate field numbers
 	err = f2.SetNumber(1)
 	require.Nil(t, err)
-	e.InsertField(1, f2)
+	err = f2.InsertIntoParent(1)
+	require.Nil(t, err)
 	err = e.SetAlias(false)
 	require.NotNil(t, err)
 }
@@ -152,7 +154,8 @@ func TestTypedFieldSetInvalidProperties(t *testing.T) {
 	require.Nil(t, err)
 	f1.SetType(protobuf.Bool)
 
-	m.InsertField(0, f1)
+	err = f1.InsertIntoParent(0)
+	require.Nil(t, err)
 
 	// duplicate label
 	f2 := m.NewField()
@@ -174,19 +177,19 @@ func TestEnumAddInvalidField(t *testing.T) {
 	f1 := e.NewField()
 
 	// label not set
-	err := e.InsertField(0, f1)
+	err := f1.InsertIntoParent(0)
 	require.NotNil(t, err)
 
 	// duplicate field number not checked
 	err = f1.SetLabel("someLabel")
 	require.Nil(t, err)
-	err = e.InsertField(0, f1)
+	err = f1.InsertIntoParent(0)
 	require.Nil(t, err)
 
 	f2 := e.NewField()
 	err = f2.SetLabel("anotherLabel")
 	require.Nil(t, err)
-	err = e.InsertField(1, f2)
+	err = f1.InsertIntoParent(1)
 	require.NotNil(t, err)
 }
 
@@ -196,7 +199,7 @@ func TestMessageInsertInvalidField(t *testing.T) {
 	f1 := m.NewField()
 
 	// label not set
-	err := m.InsertField(0, f1)
+	err := f1.InsertIntoParent(0)
 	require.NotNil(t, err)
 
 	f2 := m.NewMap()
@@ -204,6 +207,6 @@ func TestMessageInsertInvalidField(t *testing.T) {
 	require.Nil(t, err)
 
 	// field number not checked
-	err = m.InsertField(0, f2)
+	err = f2.InsertIntoParent(0)
 	require.NotNil(t, err)
 }
