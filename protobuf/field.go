@@ -63,6 +63,7 @@ func (r repeatableField) GetRepeated() bool {
 
 func (r *repeatableField) InsertIntoParent(i uint) error {
 	if err := r.validateAsMessageField(); err != nil {
+		// TODO: still counting on this becoming a panic instead
 		return err
 	}
 	r.parent.insertField(i, r)

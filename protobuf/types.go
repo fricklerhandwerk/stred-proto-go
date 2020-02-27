@@ -1,7 +1,6 @@
 package protobuf
 
 import (
-	"errors"
 	"fmt"
 	"regexp"
 )
@@ -42,7 +41,7 @@ func (i identifier) validate() error {
 		// differentiated by type: API caller and user. maybe API usage errors
 		// should even result in a panic, since a nonsensical operation due to
 		// broken implementation simply must not be allowed.
-		return errors.New(fmt.Sprintf("Identifier must match %s", pattern))
+		return fmt.Errorf("Identifier must match %s", pattern)
 	}
 	return nil
 }

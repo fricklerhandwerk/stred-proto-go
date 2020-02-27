@@ -104,7 +104,7 @@ func (e enum) validateNumber(f fieldNumber) error {
 	switch n := f.(type) {
 	case number:
 		return e.validateNumberSingle(n)
-	case numberRange:
+	case *numberRange:
 		return e.validateNumberRange(n)
 	default:
 		panic(fmt.Sprintf("unhandled field number type %T", f))
@@ -133,7 +133,7 @@ func (e enum) validateNumberSingle(n number) error {
 	return nil
 }
 
-func (e enum) validateNumberRange(n numberRange) error {
+func (e enum) validateNumberRange(n *numberRange) error {
 	panic("not implemented")
 }
 

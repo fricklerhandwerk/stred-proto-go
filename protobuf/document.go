@@ -1,7 +1,6 @@
 package protobuf
 
 import (
-	"errors"
 	"fmt"
 )
 
@@ -35,12 +34,12 @@ func (p document) validateLabel(l identifier) error {
 	}
 	for _, d := range p.definitions {
 		if d.GetLabel() == l.String() {
-			return errors.New(fmt.Sprintf("label %s already declared for other %T", l.String(), d))
+			return fmt.Errorf("label %s already declared for other %T", l.String(), d)
 		}
 	}
 	for _, s := range p.services {
 		if s.GetLabel() == l.String() {
-			return errors.New(fmt.Sprintf("label %s already declared for a service", l.String()))
+			return fmt.Errorf("label %s already declared for a service", l.String())
 		}
 	}
 

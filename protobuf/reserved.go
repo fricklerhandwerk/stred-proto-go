@@ -1,6 +1,9 @@
 package protobuf
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+)
 
 type reservedNumbers struct {
 	numbers []fieldNumber
@@ -8,14 +11,76 @@ type reservedNumbers struct {
 }
 
 type fieldNumber interface {
-	intersects([]fieldNumber) bool
+	intersects(fieldNumber) bool
 }
 
-func (r reservedNumbers) InsertNumber(index uint, n fieldNumber) error {
-	panic("not implemented")
+func (r reservedNumbers) GetNumbers() []fieldNumber {
+	return r.numbers
+}
+
+func (r *reservedNumbers) InsertNumber(i uint, n uint) error {
+	// check self-consistency in case range was not yet added to parent
+	if err := r.validateNumber(number(n)); err != nil {
+		return err
+	}
+	r.numbers = append(r.numbers, nil)
+	copy(r.numbers[i+1:], r.numbers[i:])
+	r.numbers[i] = number(n)
+	return nil
+}
+
+func (r reservedNumbers) validateNumber(n fieldNumber) error {
+	for _, i := range r.numbers {
+		if i.intersects(n) {
+			var source string
+			switch v := i.(type) {
+			case number:
+				source = fmt.Sprintf("field number %d", v)
+			case *numberRange:
+				source = fmt.Sprintf("range %d to %d", v.GetStart(), v.GetEnd())
+			default:
+				panic(fmt.Sprintf("unhandled number type %T", i))
+			}
+			return fmt.Errorf("%s already reserved", source)
+		}
+	}
+	if err := r.parent.validateNumber(n); err != nil {
+		return err
+	}
+	return nil
+}
+
+// TODO: this is a bad interface. the number in the list should instead be
+// converted directly, otherwise we have no guarantee that the underlying value
+// is actually of type `number`. but then we have to rework that type...
+func (r *reservedNumbers) ToRange(i uint, end uint) error {
+	var (
+		start number
+		ok    bool
+	)
+	if start, ok = r.numbers[i].(number); !ok {
+		// TODO: probably panic here, should not happen
+		return errors.New("reserved field must be a single number")
+	}
+	nr := &numberRange{
+		parent: r,
+		start:  start,
+	}
+	var empty *numberRange
+	r.numbers[i] = empty // otherwise old value will be part of the check
+	if err := nr.SetEnd(end); err != nil {
+		r.numbers[i] = start
+		return err
+	}
+	r.numbers[i] = nr
+	return nil
+
 }
 
 func (r *reservedNumbers) InsertIntoParent(i uint) error {
+	if len(r.numbers) < 1 {
+		return errors.New("reserved numbers need at least one entry")
+	}
 	switch p := r.parent.(type) {
 	case *enum:
 		if err := r.validateAsEnumField(); err != nil {

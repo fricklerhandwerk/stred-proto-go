@@ -210,3 +210,36 @@ func TestMessageInsertInvalidField(t *testing.T) {
 	err = f2.InsertIntoParent(0)
 	require.NotNil(t, err)
 }
+
+func TestValidateReservedNumber(t *testing.T) {
+	m := protobuf.NewDocument().NewMessage()
+	r := m.NewReservedNumbers()
+	err := r.InsertNumber(0, 1)
+	require.Nil(t, err)
+	require.Len(t, r.GetNumbers(), 1)
+
+	err = r.ToRange(0, 10)
+	require.Nil(t, err)
+
+	err = r.InsertNumber(1, 2)
+	require.NotNil(t, err)
+	require.Len(t, r.GetNumbers(), 1)
+
+	err = r.InsertNumber(1, 11)
+	require.Nil(t, err)
+
+	err = r.ToRange(1, 20)
+	require.Nil(t, err)
+
+	type number interface {
+		SetStart(uint) error
+		SetEnd(uint) error
+	}
+	nr, ok := r.GetNumbers()[1].(number)
+	require.True(t, ok)
+	err = nr.SetStart(9)
+	require.NotNil(t, err)
+
+	err = nr.SetEnd(11)
+	require.NotNil(t, err)
+}

@@ -61,6 +61,18 @@ func (m *message) NewOneOf() *oneOf {
 	}
 }
 
+func (m *message) NewReservedNumbers() *reservedNumbers {
+	return &reservedNumbers{
+		parent: m,
+	}
+}
+
+func (m *message) NewReservedLabels() *reservedLabels {
+	return &reservedLabels{
+		parent: m,
+	}
+}
+
 func (m *message) NewMessage() *message {
 	return &message{
 		parent: m,
@@ -131,7 +143,7 @@ func (m message) validateNumber(f fieldNumber) error {
 	switch n := f.(type) {
 	case number:
 		return m.validateNumberSingle(n)
-	case numberRange:
+	case *numberRange:
 		return m.validateNumberRange(n)
 	default:
 		panic(fmt.Sprintf("unhandled field number type %T", f))
@@ -146,7 +158,7 @@ func (m message) validateNumberSingle(n number) error {
 		switch field := f.(type) {
 		case *repeatableField:
 			if field.GetNumber() == uint(n) {
-				return errors.New(fmt.Sprintf("field number %d already in use", uint(n)))
+				return fmt.Errorf("field number %d already in use", uint(n))
 			}
 		case *mapField:
 			panic("not implemented")
@@ -163,8 +175,29 @@ func (m message) validateNumberSingle(n number) error {
 	return nil
 }
 
-func (m message) validateNumberRange(n numberRange) error {
-	panic("not implemented")
+func (m message) validateNumberRange(n *numberRange) error {
+	if n.GetStart() < 1 {
+		return errors.New("message field numbers must be >= 1")
+	}
+	for _, f := range m.fields {
+		switch field := f.(type) {
+		case *repeatableField:
+			if n.intersects(number(field.GetNumber())) {
+				return fmt.Errorf("field number %d already in use", field.GetNumber())
+			}
+		case *mapField:
+			panic("not implemented")
+		case *oneOf:
+			panic("not implemented")
+		case *reservedNumbers:
+			panic("not implemented")
+		case *reservedLabels:
+			continue
+		default:
+			panic(fmt.Sprintf("unhandled message field type %T", f))
+		}
+	}
+	return nil
 }
 
 func (m *message) _fieldType() {}
