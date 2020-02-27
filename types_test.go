@@ -204,3 +204,22 @@ func TestEnumAddInvalidField(t *testing.T) {
 	err = e.InsertField(1, f2)
 	require.NotNil(t, err)
 }
+
+func TestMessageAddInvalidField(t *testing.T) {
+	m := protobuf.Message{}
+
+	f1 := protobuf.TypedField{}
+	err := f1.SetParent(&m)
+	require.Nil(t, err)
+
+	// label not set
+	err = m.InsertField(0, f1)
+	require.NotNil(t, err)
+
+	err = f1.SetLabel("someLabel")
+	require.Nil(t, err)
+
+	// field number not checked
+	err = m.InsertField(0, f1)
+	require.NotNil(t, err)
+}

@@ -321,7 +321,9 @@ func (m Message) GetFields() []messageField {
 }
 
 func (m *Message) InsertField(i uint, field messageField) error {
-	// TODO: let field self-validate
+	if err := field.validateAsMessageField(); err != nil {
+		return err
+	}
 	switch f := field.(type) {
 	case TypedField:
 		// <https://github.com/golang/go/wiki/SliceTricks#insert>
@@ -329,6 +331,8 @@ func (m *Message) InsertField(i uint, field messageField) error {
 		m.fields = append(m.fields, nil)
 		copy(m.fields[i+1:], m.fields[i:])
 		m.fields[i] = f
+	case OneOf:
+		panic("not implemented")
 	default:
 		panic(fmt.Sprintf("unhandled message field type %T", f))
 	}
@@ -401,8 +405,6 @@ func (m Message) validateNumberRange(n numberRange) error {
 func (m *Message) _fieldType() {}
 
 type TypedField struct {
-	messageField
-
 	field
 	_type fieldType
 }
@@ -415,13 +417,29 @@ func (f *TypedField) SetType(t fieldType) {
 	f._type = t
 }
 
+func (f TypedField) validateAsMessageField() (err error) {
+	err = f.parent.validateLabel(identifier(f.GetLabel()))
+	if err != nil {
+		// TODO: still counting on this becoming a panic instead
+		return err
+	}
+	err = f.parent.validateNumber(number(f.GetNumber()))
+	if err != nil {
+		// TODO: still counting on this becoming a panic instead
+		return err
+	}
+	if f._type == nil {
+		return errors.New("message field type not set")
+	}
+	return nil
+}
+
 type fieldType interface {
 	_fieldType()
 }
 
 type repeatableField struct {
 	TypedField
-	messageField
 
 	repeated bool
 }
@@ -435,7 +453,7 @@ func (r repeatableField) getRepeated() bool {
 }
 
 type OneOf struct {
-	messageField
+	messageField // TODO: implement interface explicitly
 
 	label
 	fields []TypedField
