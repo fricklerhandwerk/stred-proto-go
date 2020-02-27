@@ -143,7 +143,6 @@ func TestEnumerationSetInvalidProperties(t *testing.T) {
 	require.Nil(t, err)
 
 	// try to disable aliasing with duplicate field numbers
-
 	err = f2.SetNumber(1)
 	require.Nil(t, err)
 	e.InsertField(1, f2)
@@ -178,4 +177,30 @@ func TestTypedFieldSetInvalidProperties(t *testing.T) {
 	require.Nil(t, err)
 	err = f2.SetNumber(1)
 	assert.NotNil(t, err)
+}
+
+func TestEnumAddInvalidField(t *testing.T) {
+	e := protobuf.Enum{}
+
+	f1 := protobuf.Enumeration{}
+	err := f1.SetParent(&e)
+	require.Nil(t, err)
+
+	// label not set
+	err = e.InsertField(0, f1)
+	require.NotNil(t, err)
+
+	// duplicate field number not checked
+	err = f1.SetLabel("someLabel")
+	require.Nil(t, err)
+	err = e.InsertField(0, f1)
+	require.Nil(t, err)
+
+	f2 := protobuf.Enumeration{}
+	err = f2.SetParent(&e)
+	require.Nil(t, err)
+	err = f2.SetLabel("anotherLabel")
+	require.Nil(t, err)
+	err = e.InsertField(1, f2)
+	require.NotNil(t, err)
 }

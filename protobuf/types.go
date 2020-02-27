@@ -38,6 +38,9 @@ func (p *Protocol) SetPackage(pkg string) error {
 }
 
 func (p Protocol) validateLabel(l identifier) error {
+	if err := l.validate(); err != nil {
+		return err
+	}
 	for _, d := range p.definitions {
 		if d.GetLabel() == l.String() {
 			return errors.New(fmt.Sprintf("label %s already declared", l.String()))
@@ -128,9 +131,8 @@ func (d label) GetLabel() string {
 
 func (d *label) SetLabel(label string) error {
 	ident := identifier(label)
-	if err := ident.validate(); err != nil {
-		return err
-	}
+	// TODO: if we have constructors with mandatory valid parent, there is no
+	// need to check the parent every time it is needed
 	if d.parent == nil {
 		return errors.New("declaration has no parent")
 	}
@@ -342,6 +344,9 @@ func (m *Message) insertDefinition(i uint, d definition) error {
 }
 
 func (m Message) validateLabel(l identifier) error {
+	if err := l.validate(); err != nil {
+		return err
+	}
 	for _, f := range m.fields {
 		switch field := f.(type) {
 		case TypedField:
@@ -369,6 +374,9 @@ func (m Message) validateNumber(f fieldNumber) error {
 }
 
 func (m Message) validateNumberSingle(n number) error {
+	if n < 1 {
+		return errors.New("message field number must be >= 1")
+	}
 	for _, f := range m.fields {
 		switch field := f.(type) {
 		case TypedField:
@@ -527,7 +535,9 @@ func (e Enum) GetFields() []enumField {
 }
 
 func (e *Enum) InsertField(i uint, field enumField) error {
-	// TODO: let field self-validate
+	if err := field.validateAsEnumField(); err != nil {
+		return err
+	}
 	switch f := field.(type) {
 	case Enumeration:
 		// <https://github.com/golang/go/wiki/SliceTricks#insert>
@@ -551,6 +561,9 @@ func (e *Enum) SetParent(d definitionContainer) error {
 }
 
 func (e Enum) validateLabel(l identifier) error {
+	if err := l.validate(); err != nil {
+		return err
+	}
 	for _, f := range e.fields {
 		switch field := f.(type) {
 		case Enumeration:
@@ -617,8 +630,18 @@ type Enumeration struct {
 	field
 }
 
-func (e Enumeration) validateAsEnumField() error {
-	panic("not implemented")
+func (e Enumeration) validateAsEnumField() (err error) {
+	err = e.parent.validateLabel(identifier(e.GetLabel()))
+	if err != nil {
+		// TODO: still counting on this becoming a panic instead
+		return err
+	}
+	err = e.parent.validateNumber(number(e.GetNumber()))
+	if err != nil {
+		// TODO: still counting on this becoming a panic instead
+		return err
+	}
+	return nil
 }
 
 type enumField interface {
