@@ -151,7 +151,7 @@ func TestEnumerationSetInvalidProperties(t *testing.T) {
 	require.NotNil(t, err)
 }
 
-func TestMessageAddInvalidFields(t *testing.T) {
+func TestTypedFieldSetInvalidProperties(t *testing.T) {
 	m := protobuf.Message{}
 
 	f1 := protobuf.TypedField{}
