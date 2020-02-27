@@ -12,15 +12,8 @@ func NewDocument() *document {
 }
 
 type document struct {
-	_package *identifier
-	imports  []_import
-	// TODO: weird naming rules...
-	// 1. service labels share a namespace with message/enum labels
-	// 2. rpc labels and rpc argument/return types share a namespace with
-	//    *unqualified* message/enum labels.  you can only have "rpc Foo" and use
-	//    "message Foo" as an argument/return type in one of your rpcs if you use
-	//    the qualified message label "rpc Foo (package.Foo)", but then you
-	//    *must* have a package name
+	_package    *identifier
+	imports     []_import
 	services    []service
 	definitions []definition
 }
@@ -44,13 +37,19 @@ func (p document) validateLabel(l identifier) error {
 	}
 	for _, d := range p.definitions {
 		if d.GetLabel() == l.String() {
-			return errors.New(fmt.Sprintf("label %s already declared", l.String()))
+			return errors.New(fmt.Sprintf("label %s already declared for other %T", l.String(), d))
 		}
 	}
+	for _, s := range p.services {
+		if s.GetLabel() == l.String() {
+			return errors.New(fmt.Sprintf("label %s already declared for a service", l.String()))
+		}
+	}
+
 	return nil
 }
 
-func (p document) getDefinitions() []definition {
+func (p document) GetDefinitions() []definition {
 	out := make([]definition, len(p.definitions))
 	for i, v := range p.definitions {
 		out[i] = v.(definition)
@@ -58,12 +57,26 @@ func (p document) getDefinitions() []definition {
 	return out
 }
 
-func (p *document) insertDefinition(i uint, d definition) error {
-	panic("not implemented")
+func (p *document) InsertDefinition(i uint, d definition) error {
+	if err := d.validateAsDefinition(); err != nil {
+		return err
+	}
+	p.definitions = append(p.definitions, nil)
+	copy(p.definitions[i+1:], p.definitions[i:])
+	p.definitions[i] = d
+	return nil
 }
 
-func (p *document) NewMessage() message {
-	return message{
+func (p *document) NewService() *service {
+	return &service{
+		label: label{
+			parent: p,
+		},
+	}
+}
+
+func (p *document) NewMessage() *message {
+	return &message{
 		parent: p,
 		label: label{
 			parent: p,
@@ -123,6 +136,11 @@ type service struct {
 }
 
 type rpc struct {
+	// TODO: rpc labels and rpc argument/return types share a namespace with
+	// *unqualified* message/enum labels within a service. you can only have "rpc
+	// Foo" and use "message Foo" as an argument/return type in one of the same
+	// service's rpcs if you use the qualified message label "rpc Foo
+	// (package.Foo)", but then you *must* have a package name
 	label
 	requestType    *message
 	streamRequest  bool
@@ -160,8 +178,8 @@ func (d *label) SetLabel(label string) error {
 type definitionContainer interface {
 	declarationContainer
 
-	getDefinitions() []definition
-	insertDefinition(index uint, def definition) error
+	GetDefinitions() []definition
+	InsertDefinition(index uint, def definition) error
 }
 
 type definition interface {
@@ -169,6 +187,7 @@ type definition interface {
 	declarationContainer
 
 	validateNumber(fieldNumber) error
+	validateAsDefinition() error
 }
 
 type field struct {
@@ -316,6 +335,9 @@ func (m message) GetFields() []messageField {
 // the inserted field is really this message. instead wie should have
 // `field.Insert(uint) error {}`, which may call its parent, which is the right
 // thing by construction, to do the work.
+// doing it that way has the added benifit that self-validation semantics are
+// contained in the child type instead of calling the child from here, which
+// calls the parent again.
 func (m *message) InsertField(i uint, field messageField) error {
 	if err := field.validateAsMessageField(); err != nil {
 		return err
@@ -327,8 +349,8 @@ func (m *message) InsertField(i uint, field messageField) error {
 	return nil
 }
 
-func (m *message) NewField() typedField {
-	return typedField{
+func (m *message) NewField() *typedField {
+	return &typedField{
 		field: field{
 			parent: m,
 			label: label{
@@ -338,26 +360,54 @@ func (m *message) NewField() typedField {
 	}
 }
 
-func (m *message) NewMap() mapField {
-	return mapField{
-		typedField: m.NewField(),
+func (m *message) NewMap() *mapField {
+	return &mapField{
+		typedField: *m.NewField(),
 	}
 }
 
-func (m *message) NewOneOf() oneOf {
-	return oneOf{
+func (m *message) NewOneOf() *oneOf {
+	return &oneOf{
+		parent: m,
 		label: label{
 			parent: m,
 		},
 	}
 }
 
-func (m message) getDefinitions() []definition {
+func (m *message) NewMessage() *message {
+	return &message{
+		parent: m,
+		label: label{
+			parent: m,
+		},
+	}
+}
+
+func (m *message) NewEnum() *enum {
+	return &enum{
+		parent: m,
+		label: label{
+			parent: m,
+		},
+	}
+}
+
+func (m message) GetDefinitions() []definition {
 	panic("not implemented")
 }
 
-func (m *message) insertDefinition(i uint, d definition) error {
+func (m *message) InsertDefinition(i uint, d definition) error {
 	panic("not implemented")
+}
+
+func (m message) validateAsDefinition() (err error) {
+	err = m.parent.validateLabel(identifier(m.GetLabel()))
+	if err != nil {
+		// TODO: still counting on this becoming a panic instead
+		return
+	}
+	return
 }
 
 func (m message) validateLabel(l identifier) error {
@@ -369,7 +419,7 @@ func (m message) validateLabel(l identifier) error {
 	}
 	for _, f := range m.fields {
 		switch field := f.(type) {
-		case typedField:
+		case *typedField:
 			if field.GetLabel() == l.String() {
 				return errors.New(fmt.Sprintf("label %q already declared", l.String()))
 			}
@@ -399,13 +449,13 @@ func (m message) validateNumberSingle(n number) error {
 	}
 	for _, f := range m.fields {
 		switch field := f.(type) {
-		case typedField:
+		case *typedField:
 			if field.GetNumber() == uint(n) {
 				return errors.New(fmt.Sprintf("field number %d already in use", uint(n)))
 			}
-		case reservedNumbers:
+		case *reservedNumbers:
 			panic("not implemented")
-		case reservedLabels:
+		case *reservedLabels:
 			continue
 		default:
 			panic(fmt.Sprintf("unhandled message field type %T", f))
@@ -471,7 +521,7 @@ func (r repeatableField) getRepeated() bool {
 type oneOf struct {
 	label
 	fields []typedField
-	// ...
+	parent *message
 }
 
 func (o oneOf) GetFields() []typedField {
@@ -546,7 +596,7 @@ func (e *enum) SetAlias(b bool) error {
 		numbers := make(map[uint]bool, len(e.fields))
 		for _, field := range e.fields {
 			switch f := field.(type) {
-			case enumeration:
+			case *enumeration:
 				n := f.GetNumber()
 				if numbers[n] {
 					lines := []string{
@@ -556,8 +606,10 @@ func (e *enum) SetAlias(b bool) error {
 					return errors.New(strings.Join(lines, " "))
 				}
 				numbers[n] = true
-			default:
+			case fieldNumber:
 				continue
+			default:
+				panic(fmt.Sprintf("unhandled enum field type %T", f))
 			}
 		}
 	}
@@ -586,8 +638,8 @@ func (e *enum) InsertField(i uint, field enumField) error {
 	return nil
 }
 
-func (e *enum) NewField() enumeration {
-	return enumeration{
+func (e *enum) NewField() *enumeration {
+	return &enumeration{
 		field: field{
 			parent: e,
 			label: label{
@@ -603,20 +655,20 @@ func (e enum) validateLabel(l identifier) error {
 	}
 	for _, f := range e.fields {
 		switch field := f.(type) {
-		case enumeration:
+		case *enumeration:
 			if field.GetLabel() == l.String() {
 				return errors.New(fmt.Sprintf("label %s already declared", l.String()))
 			}
-		case reservedLabels:
+		case *reservedLabels:
 			for _, r := range field.Get() {
 				if r == l.String() {
 					return errors.New(fmt.Sprintf("label %s already declared", l.String()))
 				}
 			}
-		case reservedNumbers:
+		case *reservedNumbers:
 			continue
 		default:
-			panic(fmt.Sprintf("unhandled message field type %T", f))
+			panic(fmt.Sprintf("unhandled enum field type %T", f))
 		}
 	}
 	return nil
@@ -638,7 +690,7 @@ func (e enum) validateNumber(f fieldNumber) error {
 func (e enum) validateNumberSingle(n number) error {
 	for _, f := range e.fields {
 		switch field := f.(type) {
-		case enumeration:
+		case *enumeration:
 			if !e.allowAlias && field.GetNumber() == uint(n) {
 				lines := []string{
 					fmt.Sprintf("field number %d already in use.", uint(n)),
@@ -646,9 +698,9 @@ func (e enum) validateNumberSingle(n number) error {
 				}
 				return errors.New(strings.Join(lines, " "))
 			}
-		case reservedNumbers:
+		case *reservedNumbers:
 			panic("not implemented")
-		case reservedLabels:
+		case *reservedLabels:
 			continue
 		default:
 			panic(fmt.Sprintf("unhandled field number type %T", f))
@@ -659,6 +711,15 @@ func (e enum) validateNumberSingle(n number) error {
 
 func (e enum) validateNumberRange(n numberRange) error {
 	panic("not implemented")
+}
+
+func (e enum) validateAsDefinition() (err error) {
+	err = e.parent.validateLabel(identifier(e.GetLabel()))
+	if err != nil {
+		// TODO: still counting on this becoming a panic instead
+		return
+	}
+	return
 }
 
 func (e *enum) _fieldType() {}

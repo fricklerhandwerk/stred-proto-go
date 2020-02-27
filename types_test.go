@@ -23,6 +23,17 @@ func TestProtocolSetInvalidPackage(t *testing.T) {
 	assert.Nil(t, p.GetPackage())
 }
 
+func TestProtocolDuplicateLabelsForMessageAndService(t *testing.T) {
+	p := protobuf.NewDocument()
+	m := p.NewMessage()
+	err := m.SetLabel("foo")
+	require.Nil(t, err)
+	p.InsertDefinition(0, m)
+	s := p.NewService()
+	err = s.SetLabel("foo")
+	assert.NotNil(t, err)
+}
+
 func TestMessageSetLabel(t *testing.T) {
 	p := protobuf.NewDocument()
 	m := p.NewMessage()
