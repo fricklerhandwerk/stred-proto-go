@@ -7,13 +7,14 @@ import (
 	"strings"
 )
 
-// TODO: maybe do not export any types at all, but just constructors such as
-// `NewProtocol() protocol`. that way we can enforce setting a parent on types
-// which need one, thus avoiding one source of API usage errors.
-type Protocol struct {
+func NewDocument() *document {
+	return &document{}
+}
+
+type document struct {
 	_package *identifier
 	imports  []_import
-	// weird naming rules...
+	// TODO: weird naming rules...
 	// 1. service labels share a namespace with message/enum labels
 	// 2. rpc labels and rpc argument/return types share a namespace with
 	//    *unqualified* message/enum labels.  you can only have "rpc Foo" and use
@@ -24,11 +25,11 @@ type Protocol struct {
 	definitions []definition
 }
 
-func (p Protocol) GetPackage() *identifier {
+func (p document) GetPackage() *identifier {
 	return p._package
 }
 
-func (p *Protocol) SetPackage(pkg string) error {
+func (p *document) SetPackage(pkg string) error {
 	ident := identifier(pkg)
 	if err := ident.validate(); err != nil {
 		return err
@@ -37,7 +38,7 @@ func (p *Protocol) SetPackage(pkg string) error {
 	return nil
 }
 
-func (p Protocol) validateLabel(l identifier) error {
+func (p document) validateLabel(l identifier) error {
 	if err := l.validate(); err != nil {
 		return err
 	}
@@ -49,7 +50,7 @@ func (p Protocol) validateLabel(l identifier) error {
 	return nil
 }
 
-func (p Protocol) getDefinitions() []definition {
+func (p document) getDefinitions() []definition {
 	out := make([]definition, len(p.definitions))
 	for i, v := range p.definitions {
 		out[i] = v.(definition)
@@ -57,8 +58,26 @@ func (p Protocol) getDefinitions() []definition {
 	return out
 }
 
-func (p *Protocol) insertDefinition(i uint, d definition) error {
+func (p *document) insertDefinition(i uint, d definition) error {
 	panic("not implemented")
+}
+
+func (p *document) NewMessage() message {
+	return message{
+		parent: p,
+		label: label{
+			parent: p,
+		},
+	}
+}
+
+func (p *document) NewEnum() enum {
+	return enum{
+		parent: p,
+		label: label{
+			parent: p,
+		},
+	}
 }
 
 // TODO: probably there is no need to have an extra type here, and validation
@@ -105,9 +124,9 @@ type service struct {
 
 type rpc struct {
 	label
-	requestType    *Message
+	requestType    *message
 	streamRequest  bool
-	responseType   *Message
+	responseType   *message
 	streamResponse bool
 }
 
@@ -131,11 +150,6 @@ func (d label) GetLabel() string {
 
 func (d *label) SetLabel(label string) error {
 	ident := identifier(label)
-	// TODO: if we have constructors with mandatory valid parent, there is no
-	// need to check the parent every time it is needed
-	if d.parent == nil {
-		return errors.New("declaration has no parent")
-	}
 	if err := d.parent.validateLabel(ident); err != nil {
 		return err
 	}
@@ -251,68 +265,58 @@ type fieldNumber interface {
 	intersects([]fieldNumber) bool
 }
 
-type ReservedNumbers struct {
+type reservedNumbers struct {
 	numbers []fieldNumber
 }
 
-func (r ReservedNumbers) Insert(index uint, n fieldNumber) error {
+func (r reservedNumbers) Insert(index uint, n fieldNumber) error {
 	panic("not implemented")
 }
 
-func (e ReservedNumbers) validateAsEnumField() error {
+func (e reservedNumbers) validateAsEnumField() error {
 	panic("not implemented")
 }
 
-func (e ReservedNumbers) validateAsMessageField() error {
+func (e reservedNumbers) validateAsMessageField() error {
 	panic("not implemented")
 }
 
-type ReservedLabels struct {
+type reservedLabels struct {
 	labels []identifier
 }
 
-func (r ReservedLabels) Get() []string {
+func (r reservedLabels) Get() []string {
 	panic("not implemented")
 }
 
-func (r ReservedLabels) Insert(index uint, n string) error {
+func (r reservedLabels) Insert(index uint, n string) error {
 	panic("not implemented")
 }
 
-func (r ReservedLabels) validateAsEnumField() error {
+func (r reservedLabels) validateAsEnumField() error {
 	panic("not implemented")
 }
 
-func (r ReservedLabels) validateAsMessageField() error {
+func (r reservedLabels) validateAsMessageField() error {
 	panic("not implemented")
 }
 
-type Message struct {
+type message struct {
 	label
 	fields      []messageField
 	definitions []definition
 	parent      definitionContainer
 }
 
-func (m *Message) SetParent(d definitionContainer) error {
-	if d == nil {
-		return errors.New("parent must not be nil")
-	}
-	// TODO: check if old parent contains ourselves. changing the parent is not
-	// allowed in this case
-	if v, ok := d.(*Message); ok && m == v {
-		return errors.New("message cannot be parent of itself")
-	}
-	m.label.parent = d
-	m.parent = d
-	return nil
-}
-
-func (m Message) GetFields() []messageField {
+func (m message) GetFields() []messageField {
 	return m.fields
 }
 
-func (m *Message) InsertField(i uint, field messageField) error {
+// TODO: this is a bad interface, as it requires checking that the parent of
+// the inserted field is really this message. instead wie should have
+// `field.Insert(uint) error {}`, which may call its parent, which is the right
+// thing by construction, to do the work.
+func (m *message) InsertField(i uint, field messageField) error {
 	if err := field.validateAsMessageField(); err != nil {
 		return err
 	}
@@ -323,15 +327,40 @@ func (m *Message) InsertField(i uint, field messageField) error {
 	return nil
 }
 
-func (m Message) getDefinitions() []definition {
+func (m *message) NewField() typedField {
+	return typedField{
+		field: field{
+			parent: m,
+			label: label{
+				parent: m,
+			},
+		},
+	}
+}
+
+func (m *message) NewMap() mapField {
+	return mapField{
+		typedField: m.NewField(),
+	}
+}
+
+func (m *message) NewOneOf() oneOf {
+	return oneOf{
+		label: label{
+			parent: m,
+		},
+	}
+}
+
+func (m message) getDefinitions() []definition {
 	panic("not implemented")
 }
 
-func (m *Message) insertDefinition(i uint, d definition) error {
+func (m *message) insertDefinition(i uint, d definition) error {
 	panic("not implemented")
 }
 
-func (m Message) validateLabel(l identifier) error {
+func (m message) validateLabel(l identifier) error {
 	// TODO: if the policy now develops such that everything is validated by its
 	// parent, this should also be done by a function independent of the
 	// identifier. this makes the whole extra type unnecessary.
@@ -340,7 +369,7 @@ func (m Message) validateLabel(l identifier) error {
 	}
 	for _, f := range m.fields {
 		switch field := f.(type) {
-		case TypedField:
+		case typedField:
 			if field.GetLabel() == l.String() {
 				return errors.New(fmt.Sprintf("label %q already declared", l.String()))
 			}
@@ -351,7 +380,7 @@ func (m Message) validateLabel(l identifier) error {
 	return nil
 }
 
-func (m Message) validateNumber(f fieldNumber) error {
+func (m message) validateNumber(f fieldNumber) error {
 	// TODO: check valid values
 	// https://developers.google.com/protocol-buffers/docs/proto3#assigning-field-numbers
 	switch n := f.(type) {
@@ -364,19 +393,19 @@ func (m Message) validateNumber(f fieldNumber) error {
 	}
 }
 
-func (m Message) validateNumberSingle(n number) error {
+func (m message) validateNumberSingle(n number) error {
 	if n < 1 {
 		return errors.New("message field number must be >= 1")
 	}
 	for _, f := range m.fields {
 		switch field := f.(type) {
-		case TypedField:
+		case typedField:
 			if field.GetNumber() == uint(n) {
 				return errors.New(fmt.Sprintf("field number %d already in use", uint(n)))
 			}
-		case ReservedNumbers:
+		case reservedNumbers:
 			panic("not implemented")
-		case ReservedLabels:
+		case reservedLabels:
 			continue
 		default:
 			panic(fmt.Sprintf("unhandled message field type %T", f))
@@ -385,44 +414,26 @@ func (m Message) validateNumberSingle(n number) error {
 	return nil
 }
 
-func (m Message) validateNumberRange(n numberRange) error {
+func (m message) validateNumberRange(n numberRange) error {
 	panic("not implemented")
 }
 
-func (m *Message) _fieldType() {}
+func (m *message) _fieldType() {}
 
-type TypedField struct {
+type typedField struct {
 	field
 	_type fieldType
 }
 
-// TODO: probably letting the API caller set the parent is a bad idea because
-// it requires additional validation since it can be misused. this is another
-// argument in favor of constructors - but as methods on container types, such
-// as `f := myMessage.NewTypedField()`. moving an object to a different parent
-// must then be implemented in the caller's logic: delete and recreate with
-// property-wise validation. this makes sense, as the UI still needs granular
-// information when something does not pass the check.
-func (f *TypedField) SetParent(p *Message) error {
-	if p == nil {
-		return errors.New("parent must not be nil")
-	}
-	// TODO: check if old parent contains ourselves. changing the parent is not
-	// allowed in this case
-	f.label.parent = p
-	f.parent = p
-	return nil
-}
-
-func (f TypedField) GetType() fieldType {
+func (f typedField) GetType() fieldType {
 	return f._type
 }
 
-func (f *TypedField) SetType(t fieldType) {
+func (f *typedField) SetType(t fieldType) {
 	f._type = t
 }
 
-func (f TypedField) validateAsMessageField() (err error) {
+func (f typedField) validateAsMessageField() (err error) {
 	err = f.parent.validateLabel(identifier(f.GetLabel()))
 	if err != nil {
 		// TODO: still counting on this becoming a panic instead
@@ -444,7 +455,7 @@ type fieldType interface {
 }
 
 type repeatableField struct {
-	TypedField
+	typedField
 
 	repeated bool
 }
@@ -457,33 +468,35 @@ func (r repeatableField) getRepeated() bool {
 	return r.repeated
 }
 
-type OneOf struct {
-	messageField // TODO: implement interface explicitly
-
+type oneOf struct {
 	label
-	fields []TypedField
+	fields []typedField
 	// ...
 }
 
-func (o OneOf) GetFields() []TypedField {
+func (o oneOf) GetFields() []typedField {
 	panic("not implemented")
 }
 
-func (o OneOf) InsertField(i uint, f TypedField) error {
+func (o oneOf) InsertField(i uint, f typedField) error {
 	panic("not implemented")
 }
 
-type MapField struct {
-	TypedField
+func (o oneOf) validateAsMessageField() error {
+	panic("not implemented")
+}
+
+type mapField struct {
+	typedField
 
 	key keyType
 }
 
-func (m MapField) GetKeyType() keyType {
+func (m mapField) GetKeyType() keyType {
 	return m.key
 }
 
-func (m MapField) SetKeyType(k keyType) {
+func (m mapField) SetKeyType(k keyType) {
 	m.key = k
 }
 
@@ -520,25 +533,25 @@ type messageField interface {
 	validateAsMessageField() error
 }
 
-type Enum struct {
+type enum struct {
 	label
 	allowAlias bool
 	fields     []enumField
 	parent     definitionContainer
 }
 
-func (e *Enum) AllowAlias(b bool) error {
+func (e *enum) SetAlias(b bool) error {
 	if !b && e.allowAlias {
 		// check if aliasing is in place
 		numbers := make(map[uint]bool, len(e.fields))
 		for _, field := range e.fields {
 			switch f := field.(type) {
-			case Enumeration:
+			case enumeration:
 				n := f.GetNumber()
 				if numbers[n] {
-					lines := []string{fmt.Sprintf(
-						"field number %d is used multiple times.", n),
-						"remove aliasing before disallowing it.",
+					lines := []string{
+						fmt.Sprintf("field number %d is used multiple times.", n),
+						fmt.Sprintf("remove aliasing before setting %q.", "allow_alias = false"),
 					}
 					return errors.New(strings.Join(lines, " "))
 				}
@@ -552,11 +565,15 @@ func (e *Enum) AllowAlias(b bool) error {
 	return nil
 }
 
-func (e Enum) GetFields() []enumField {
+func (e enum) GetAlias() bool {
+	return e.allowAlias
+}
+
+func (e enum) GetFields() []enumField {
 	return e.fields
 }
 
-func (e *Enum) InsertField(i uint, field enumField) error {
+func (e *enum) InsertField(i uint, field enumField) error {
 	if err := field.validateAsEnumField(); err != nil {
 		return err
 	}
@@ -569,34 +586,34 @@ func (e *Enum) InsertField(i uint, field enumField) error {
 	return nil
 }
 
-func (e *Enum) SetParent(d definitionContainer) error {
-	if d == nil {
-		return errors.New("parent is nil")
+func (e *enum) NewField() enumeration {
+	return enumeration{
+		field: field{
+			parent: e,
+			label: label{
+				parent: e,
+			},
+		},
 	}
-	// TODO: check if old parent contains ourselves. changing the parent is not
-	// allowed in this case
-	e.label.parent = d
-	e.parent = d
-	return nil
 }
 
-func (e Enum) validateLabel(l identifier) error {
+func (e enum) validateLabel(l identifier) error {
 	if err := l.validate(); err != nil {
 		return err
 	}
 	for _, f := range e.fields {
 		switch field := f.(type) {
-		case Enumeration:
+		case enumeration:
 			if field.GetLabel() == l.String() {
 				return errors.New(fmt.Sprintf("label %s already declared", l.String()))
 			}
-		case ReservedLabels:
+		case reservedLabels:
 			for _, r := range field.Get() {
 				if r == l.String() {
 					return errors.New(fmt.Sprintf("label %s already declared", l.String()))
 				}
 			}
-		case ReservedNumbers:
+		case reservedNumbers:
 			continue
 		default:
 			panic(fmt.Sprintf("unhandled message field type %T", f))
@@ -605,7 +622,7 @@ func (e Enum) validateLabel(l identifier) error {
 	return nil
 }
 
-func (e Enum) validateNumber(f fieldNumber) error {
+func (e enum) validateNumber(f fieldNumber) error {
 	// TODO: check valid values
 	// https://developers.google.com/protocol-buffers/docs/proto3#assigning-field-numbers
 	switch n := f.(type) {
@@ -618,10 +635,10 @@ func (e Enum) validateNumber(f fieldNumber) error {
 	}
 }
 
-func (e Enum) validateNumberSingle(n number) error {
+func (e enum) validateNumberSingle(n number) error {
 	for _, f := range e.fields {
 		switch field := f.(type) {
-		case Enumeration:
+		case enumeration:
 			if !e.allowAlias && field.GetNumber() == uint(n) {
 				lines := []string{
 					fmt.Sprintf("field number %d already in use.", uint(n)),
@@ -629,39 +646,28 @@ func (e Enum) validateNumberSingle(n number) error {
 				}
 				return errors.New(strings.Join(lines, " "))
 			}
-		case ReservedNumbers:
+		case reservedNumbers:
 			panic("not implemented")
-		case ReservedLabels:
+		case reservedLabels:
 			continue
 		default:
-			panic(fmt.Sprintf("unhandled message field type %T", f))
+			panic(fmt.Sprintf("unhandled field number type %T", f))
 		}
 	}
 	return nil
 }
 
-func (e Enum) validateNumberRange(n numberRange) error {
+func (e enum) validateNumberRange(n numberRange) error {
 	panic("not implemented")
 }
 
-func (e *Enum) _fieldType() {}
+func (e *enum) _fieldType() {}
 
-type Enumeration struct {
+type enumeration struct {
 	field
 }
 
-func (e *Enumeration) SetParent(p *Enum) error {
-	if p == nil {
-		return errors.New("parent must not be nil")
-	}
-	// TODO: check if old parent contains ourselves. changing the parent is not
-	// allowed in this case
-	e.label.parent = p
-	e.parent = p
-	return nil
-}
-
-func (e Enumeration) validateAsEnumField() (err error) {
+func (e enumeration) validateAsEnumField() (err error) {
 	err = e.parent.validateLabel(identifier(e.GetLabel()))
 	if err != nil {
 		// TODO: still counting on this becoming a panic instead
