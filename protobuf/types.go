@@ -154,7 +154,6 @@ type definition interface {
 	declaration
 	declarationContainer
 
-	SetParent(p definitionContainer) error
 	validateNumber(fieldNumber) error
 }
 
@@ -163,15 +162,6 @@ type field struct {
 	number     uint
 	deprecated bool
 	parent     definition
-}
-
-func (f *field) SetParent(d definition) error {
-	if d == nil {
-		return errors.New("parent must not be nil")
-	}
-	f.label.parent = d
-	f.parent = d
-	return nil
 }
 
 func (f field) GetNumber() uint {
@@ -308,6 +298,8 @@ func (m *Message) SetParent(d definitionContainer) error {
 	if d == nil {
 		return errors.New("parent must not be nil")
 	}
+	// TODO: check if old parent contains ourselves. changing the parent is not
+	// allowed in this case
 	if v, ok := d.(*Message); ok && m == v {
 		return errors.New("message cannot be parent of itself")
 	}
@@ -324,18 +316,10 @@ func (m *Message) InsertField(i uint, field messageField) error {
 	if err := field.validateAsMessageField(); err != nil {
 		return err
 	}
-	switch f := field.(type) {
-	case TypedField:
-		// <https://github.com/golang/go/wiki/SliceTricks#insert>
-		// <https://stackoverflow.com/a/46130603/5147619>
-		m.fields = append(m.fields, nil)
-		copy(m.fields[i+1:], m.fields[i:])
-		m.fields[i] = f
-	case OneOf:
-		panic("not implemented")
-	default:
-		panic(fmt.Sprintf("unhandled message field type %T", f))
-	}
+	m.fields = append(m.fields, nil)
+	copy(m.fields[i+1:], m.fields[i:])
+	m.fields[i] = field
+
 	return nil
 }
 
@@ -348,6 +332,9 @@ func (m *Message) insertDefinition(i uint, d definition) error {
 }
 
 func (m Message) validateLabel(l identifier) error {
+	// TODO: if the policy now develops such that everything is validated by its
+	// parent, this should also be done by a function independent of the
+	// identifier. this makes the whole extra type unnecessary.
 	if err := l.validate(); err != nil {
 		return err
 	}
@@ -409,6 +396,24 @@ type TypedField struct {
 	_type fieldType
 }
 
+// TODO: probably letting the API caller set the parent is a bad idea because
+// it requires additional validation since it can be misused. this is another
+// argument in favor of constructors - but as methods on container types, such
+// as `f := myMessage.NewTypedField()`. moving an object to a different parent
+// must then be implemented in the caller's logic: delete and recreate with
+// property-wise validation. this makes sense, as the UI still needs granular
+// information when something does not pass the check.
+func (f *TypedField) SetParent(p *Message) error {
+	if p == nil {
+		return errors.New("parent must not be nil")
+	}
+	// TODO: check if old parent contains ourselves. changing the parent is not
+	// allowed in this case
+	f.label.parent = p
+	f.parent = p
+	return nil
+}
+
 func (f TypedField) GetType() fieldType {
 	return f._type
 }
@@ -468,19 +473,18 @@ func (o OneOf) InsertField(i uint, f TypedField) error {
 	panic("not implemented")
 }
 
-type mapField struct {
-	messageField
+type MapField struct {
 	TypedField
 
 	key keyType
 }
 
-func (m mapField) getKeyType() keyType {
+func (m MapField) GetKeyType() keyType {
 	return m.key
 }
 
-func (m mapField) setKeyType(k keyType) error {
-	panic("not implemented")
+func (m MapField) SetKeyType(k keyType) {
+	m.key = k
 }
 
 type keyType string
@@ -556,16 +560,12 @@ func (e *Enum) InsertField(i uint, field enumField) error {
 	if err := field.validateAsEnumField(); err != nil {
 		return err
 	}
-	switch f := field.(type) {
-	case Enumeration:
-		// <https://github.com/golang/go/wiki/SliceTricks#insert>
-		// <https://stackoverflow.com/a/46130603/5147619>
-		e.fields = append(e.fields, nil)
-		copy(e.fields[i+1:], e.fields[i:])
-		e.fields[i] = f
-	default:
-		panic(fmt.Sprintf("unhandled message field type %T", f))
-	}
+	// <https://github.com/golang/go/wiki/SliceTricks#insert>
+	// <https://stackoverflow.com/a/46130603/5147619>
+	e.fields = append(e.fields, nil)
+	copy(e.fields[i+1:], e.fields[i:])
+	e.fields[i] = field
+
 	return nil
 }
 
@@ -573,6 +573,8 @@ func (e *Enum) SetParent(d definitionContainer) error {
 	if d == nil {
 		return errors.New("parent is nil")
 	}
+	// TODO: check if old parent contains ourselves. changing the parent is not
+	// allowed in this case
 	e.label.parent = d
 	e.parent = d
 	return nil
@@ -646,6 +648,17 @@ func (e *Enum) _fieldType() {}
 
 type Enumeration struct {
 	field
+}
+
+func (e *Enumeration) SetParent(p *Enum) error {
+	if p == nil {
+		return errors.New("parent must not be nil")
+	}
+	// TODO: check if old parent contains ourselves. changing the parent is not
+	// allowed in this case
+	e.label.parent = p
+	e.parent = p
+	return nil
 }
 
 func (e Enumeration) validateAsEnumField() (err error) {

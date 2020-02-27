@@ -216,10 +216,13 @@ func TestMessageAddInvalidField(t *testing.T) {
 	err = m.InsertField(0, f1)
 	require.NotNil(t, err)
 
-	err = f1.SetLabel("someLabel")
+	f2 := protobuf.MapField{}
+	err = f2.SetParent(&m)
+	require.Nil(t, err)
+	err = f2.SetLabel("someLabel")
 	require.Nil(t, err)
 
 	// field number not checked
-	err = m.InsertField(0, f1)
+	err = m.InsertField(0, f2)
 	require.NotNil(t, err)
 }
