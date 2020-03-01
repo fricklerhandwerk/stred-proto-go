@@ -9,6 +9,12 @@ import (
 // a lot of refactoring... not sure yet how exactly to proceed. having a common
 // public interface for single numbers and ranges would be very good, because
 // then the client will not need to define interfaces just to distinguish them.
+// probably this will go in the direction of what is proposed in [1], such that
+// structs will be returned by value, implementing exported interfaces, and
+// collections will return their items through an index getter. this requires
+// a lot of boilerplate, but is also the safest construction. there may still
+// be surprises with nested pointers though...
+// [1]: https://levelup.gitconnected.com/building-immutable-data-structures-in-go-56a1068c76b2
 type number uint
 
 func (n number) intersects(other fieldNumber) bool {
