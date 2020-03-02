@@ -241,3 +241,34 @@ func TestValidateReservedNumber(t *testing.T) {
 	err = nr.SetEnd(11)
 	require.NotNil(t, err)
 }
+
+func TestValidateRecursive(t *testing.T) {
+	p := protobuf.NewDocument()
+
+	m := p.NewMessage()
+	err := m.SetLabel("myMessage")
+	require.Nil(t, err)
+
+	f1 := m.NewField()
+	err = f1.SetLabel("myField")
+	require.Nil(t, err)
+	err = f1.SetNumber(1)
+	require.Nil(t, err)
+	f1.SetType(m)
+	err = f1.InsertIntoParent(0)
+	require.Nil(t, err)
+	require.EqualValues(t, 1, m.NumFields())
+
+	f2 := m.NewField()
+	err = f2.SetLabel("myNewField")
+	require.Nil(t, err)
+	err = f2.SetNumber(2)
+	require.Nil(t, err)
+	f2.SetType(m)
+	err = f2.InsertIntoParent(1)
+	require.Nil(t, err)
+	require.EqualValues(t, 2, m.NumFields())
+
+	err = m.InsertIntoParent(0)
+	require.Nil(t, err)
+}
