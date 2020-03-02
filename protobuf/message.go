@@ -26,8 +26,8 @@ func (m *message) insertField(i uint, field messageField) {
 	m.fields[i] = field
 }
 
-func (m *message) newTypedField() *typedField {
-	return &typedField{
+func (m *message) newTypedField() typedField {
+	return typedField{
 		field: field{
 			parent: m,
 			label: label{
@@ -40,14 +40,14 @@ func (m *message) newTypedField() *typedField {
 func (m *message) NewField() *repeatableField {
 	return &repeatableField{
 		parent:     m,
-		typedField: *m.newTypedField(),
+		typedField: m.newTypedField(),
 	}
 }
 
 func (m *message) NewMap() *mapField {
 	return &mapField{
 		parent:     m,
-		typedField: *m.newTypedField(),
+		typedField: m.newTypedField(),
 	}
 }
 
