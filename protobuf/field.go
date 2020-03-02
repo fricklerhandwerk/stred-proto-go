@@ -29,6 +29,10 @@ func (f *field) SetDeprecated(b bool) {
 	f.deprecated = b
 }
 
+func (f field) hasNumber(n fieldNumber) bool {
+	return n.intersects(number(f.GetNumber()))
+}
+
 type typedField struct {
 	field
 	_type fieldType
@@ -66,7 +70,7 @@ func (r *repeatableField) InsertIntoParent(i uint) error {
 	return nil
 }
 
-func (r repeatableField) validateAsMessageField() (err error) {
+func (r *repeatableField) validateAsMessageField() (err error) {
 	err = r.parent.validateLabel(identifier(r.GetLabel()))
 	if err != nil {
 		return err
@@ -105,6 +109,15 @@ func (o *oneOf) InsertIntoParent(i uint) error {
 
 func (o *oneOf) validateAsMessageField() error {
 	panic("not implemented")
+}
+
+func (o oneOf) hasNumber(n fieldNumber) bool {
+	for _, f := range o.fields {
+		if n.intersects(number(f.GetNumber())) {
+			return true
+		}
+	}
+	return false
 }
 
 type mapField struct {

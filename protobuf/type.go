@@ -47,6 +47,10 @@ func (d *label) SetLabel(label string) error {
 	return nil
 }
 
+func (d *label) hasLabel(l string) bool {
+	return l == d.GetLabel()
+}
+
 type keyType string
 
 const (

@@ -191,7 +191,7 @@ func TestEnumAddInvalidField(t *testing.T) {
 	f2 := e.NewField()
 	err = f2.SetLabel("anotherLabel")
 	require.Nil(t, err)
-	err = f1.InsertIntoParent(1)
+	err = f2.InsertIntoParent(1)
 	require.NotNil(t, err)
 }
 
@@ -213,10 +213,14 @@ func TestMessageInsertInvalidField(t *testing.T) {
 	require.NotNil(t, err)
 }
 
-func TestValidateReservedNumber(t *testing.T) {
+func TestMessageValidateReservedNumber(t *testing.T) {
 	m := protobuf.NewDocument().NewMessage()
 	r := m.NewReservedNumbers()
-	err := r.InsertNumber(0, 1)
+
+	err := r.InsertNumber(0, 0)
+	require.NotNil(t, err)
+
+	err = r.InsertNumber(0, 1)
 	require.Nil(t, err)
 	require.EqualValues(t, 1, r.NumNumbers())
 
@@ -227,8 +231,11 @@ func TestValidateReservedNumber(t *testing.T) {
 	require.NotNil(t, err)
 	require.EqualValues(t, 1, r.NumNumbers())
 
-	err = r.InsertNumber(1, 11)
+	err = r.InsertNumber(1, 12)
 	require.Nil(t, err)
+
+	err = r.ToRange(1, 11)
+	require.NotNil(t, err)
 
 	err = r.ToRange(1, 20)
 	require.Nil(t, err)
@@ -237,12 +244,54 @@ func TestValidateReservedNumber(t *testing.T) {
 	require.True(t, ok)
 	err = nr.SetStart(9)
 	require.NotNil(t, err)
+	err = nr.SetStart(13)
+	require.Nil(t, err)
 
-	err = nr.SetEnd(11)
+	err = nr.SetEnd(13)
 	require.NotNil(t, err)
+
+	err = nr.SetEnd(22)
+	require.Nil(t, err)
 }
 
-func TestValidateRecursive(t *testing.T) {
+func TestEnumValidateReservedNumber(t *testing.T) {
+	e := protobuf.NewDocument().NewEnum()
+	r := e.NewReservedNumbers()
+	err := r.InsertNumber(0, 0)
+	require.Nil(t, err)
+	require.EqualValues(t, 1, r.NumNumbers())
+
+	err = r.ToRange(0, 10)
+	require.Nil(t, err)
+
+	err = r.InsertNumber(1, 2)
+	require.NotNil(t, err)
+	require.EqualValues(t, 1, r.NumNumbers())
+
+	err = r.InsertNumber(1, 12)
+	require.Nil(t, err)
+
+	err = r.ToRange(1, 11)
+	require.NotNil(t, err)
+
+	err = r.ToRange(1, 20)
+	require.Nil(t, err)
+
+	nr, ok := r.Number(1).(protobuf.NumberRange)
+	require.True(t, ok)
+	err = nr.SetStart(9)
+	require.NotNil(t, err)
+	err = nr.SetStart(13)
+	require.Nil(t, err)
+
+	err = nr.SetEnd(13)
+	require.NotNil(t, err)
+
+	err = nr.SetEnd(22)
+	require.Nil(t, err)
+}
+
+func TestMessageValidateRecursive(t *testing.T) {
 	p := protobuf.NewDocument()
 
 	m := p.NewMessage()
@@ -270,5 +319,34 @@ func TestValidateRecursive(t *testing.T) {
 	require.EqualValues(t, 2, m.NumFields())
 
 	err = m.InsertIntoParent(0)
+	require.Nil(t, err)
+}
+
+func TestEnumValidateRecursive(t *testing.T) {
+	p := protobuf.NewDocument()
+
+	e := p.NewEnum()
+	err := e.SetLabel("myEnum")
+	require.Nil(t, err)
+
+	f1 := e.NewField()
+	err = f1.SetLabel("myField")
+	require.Nil(t, err)
+	err = f1.SetNumber(0)
+	require.Nil(t, err)
+	err = f1.InsertIntoParent(0)
+	require.Nil(t, err)
+	require.EqualValues(t, 1, e.NumFields())
+
+	f2 := e.NewField()
+	err = f2.SetLabel("myNewField")
+	require.Nil(t, err)
+	err = f2.SetNumber(1)
+	require.Nil(t, err)
+	err = f2.InsertIntoParent(1)
+	require.Nil(t, err)
+	require.EqualValues(t, 2, e.NumFields())
+
+	err = e.InsertIntoParent(0)
 	require.Nil(t, err)
 }

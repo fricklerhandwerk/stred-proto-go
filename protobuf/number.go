@@ -33,6 +33,10 @@ func (n number) intersects(other fieldNumber) bool {
 	return false
 }
 
+func (n number) GetValue() uint {
+	return uint(n)
+}
+
 type numberRange struct {
 	start  number
 	end    number
@@ -74,9 +78,6 @@ func (r *numberRange) SetEnd(e uint) error {
 }
 
 func (r *numberRange) intersects(other fieldNumber) bool {
-	if r == nil {
-		return false
-	}
 	switch o := other.(type) {
 	case number:
 		return o.intersects(r)

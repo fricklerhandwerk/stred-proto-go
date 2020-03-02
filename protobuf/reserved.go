@@ -30,9 +30,9 @@ func (r *reservedNumbers) InsertNumber(i uint, n uint) error {
 	return nil
 }
 
-func (r reservedNumbers) validateNumber(n fieldNumber) error {
+func (r *reservedNumbers) validateNumber(n fieldNumber) error {
 	for _, i := range r.numbers {
-		if i.intersects(n) {
+		if i != n && i.intersects(n) {
 			var source string
 			switch v := i.(type) {
 			case number:
@@ -67,13 +67,11 @@ func (r *reservedNumbers) ToRange(i uint, end uint) error {
 		parent: r,
 		start:  start,
 	}
-	var empty *numberRange
-	r.numbers[i] = empty // otherwise old value will be part of the check
+	r.numbers[i] = nr // otherwise old value will be part of the check
 	if err := nr.SetEnd(end); err != nil {
-		r.numbers[i] = start
+		r.numbers[i] = number(start)
 		return err
 	}
-	r.numbers[i] = nr
 	return nil
 
 }
@@ -105,6 +103,19 @@ func (r reservedNumbers) validateAsEnumField() error {
 
 func (r reservedNumbers) validateAsMessageField() error {
 	panic("not implemented")
+}
+
+func (r reservedNumbers) hasLabel(l string) bool {
+	return false
+}
+
+func (r reservedNumbers) hasNumber(n fieldNumber) bool {
+	for _, m := range r.numbers {
+		if n.intersects(m) {
+			return true
+		}
+	}
+	return false
 }
 
 type reservedLabels struct {
@@ -144,4 +155,17 @@ func (r reservedLabels) validateAsEnumField() error {
 
 func (r reservedLabels) validateAsMessageField() error {
 	panic("not implemented")
+}
+
+func (r reservedLabels) hasLabel(l string) bool {
+	for _, s := range r.labels {
+		if s.String() == l {
+			return true
+		}
+	}
+	return false
+}
+
+func (r reservedLabels) hasNumber(n fieldNumber) bool {
+	return false
 }

@@ -11,7 +11,7 @@ func NewDocument() Document {
 type document struct {
 	_package    *identifier
 	imports     []_import
-	services    []service
+	services    []*service
 	definitions []Definition
 }
 
@@ -37,12 +37,16 @@ func (p document) validateLabel(l identifier) error {
 	if err := l.validate(); err != nil {
 		return err
 	}
-	for _, d := range p.definitions {
+	for i, d := range p.definitions {
+		p.definitions[i] = nil
+		defer func() { p.definitions[i] = d }()
 		if d.GetLabel() == l.String() {
 			return fmt.Errorf("label %s already declared for other %T", l.String(), d)
 		}
 	}
-	for _, s := range p.services {
+	for i, s := range p.services {
+		p.services[i] = nil
+		defer func() { p.services[i] = s }()
 		if s.GetLabel() == l.String() {
 			return fmt.Errorf("label %s already declared for a service", l.String())
 		}

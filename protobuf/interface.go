@@ -18,10 +18,7 @@ type declaration interface {
 }
 
 type declarationContainer interface {
-	// TODO: probably this should take a `declaration` so we can check if the
-	// carrier of the identifier is already in the container. then it does not
-	// need to fail a duplication check against itself
-	validateLabel(identifier) error
+	validateLabel(ident identifier) error
 }
 
 type definitionContainer interface {
@@ -43,13 +40,14 @@ type Definition interface {
 	NewReservedNumbers() *reservedNumbers
 	NewReservedLabels() *reservedLabels
 
-	validateNumber(fieldNumber) error
+	validateNumber(n fieldNumber) error
 	validateAsDefinition() error
 }
 
 type Message interface {
 	Definition
 	definitionContainer
+	fieldType
 
 	Field(uint) messageField
 	NewField() *repeatableField
@@ -63,10 +61,13 @@ type messageField interface {
 	InsertIntoParent(uint) error
 
 	validateAsMessageField() error
+	hasLabel(string) bool
+	hasNumber(fieldNumber) bool
 }
 
 type Enum interface {
 	Definition
+	fieldType
 
 	GetAlias() bool
 	SetAlias(bool) error
@@ -80,6 +81,8 @@ type Enum interface {
 type enumField interface {
 	InsertIntoParent(uint) error
 	validateAsEnumField() error
+	hasLabel(string) bool
+	hasNumber(fieldNumber) bool
 }
 
 type fieldNumber interface {
@@ -90,7 +93,6 @@ type Number interface {
 	fieldNumber
 
 	GetValue() uint
-	SetValue(uint) error
 }
 
 type NumberRange interface {
