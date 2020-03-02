@@ -4,7 +4,7 @@ import (
 	"fmt"
 )
 
-func NewDocument() *document {
+func NewDocument() Document {
 	return &document{}
 }
 
@@ -12,11 +12,16 @@ type document struct {
 	_package    *identifier
 	imports     []_import
 	services    []service
-	definitions []definition
+	definitions []Definition
 }
 
-func (p document) GetPackage() *identifier {
-	return p._package
+func (p document) GetPackage() *string {
+	// TODO: this mess is just another argument to just store the identifier as a string (pointer)
+	if p._package == nil {
+		return nil
+	}
+	s := p._package.String()
+	return &s
 }
 
 func (p *document) SetPackage(pkg string) error {
@@ -46,21 +51,22 @@ func (p document) validateLabel(l identifier) error {
 	return nil
 }
 
-func (p document) GetDefinitions() []definition {
-	out := make([]definition, len(p.definitions))
-	for i, v := range p.definitions {
-		out[i] = v.(definition)
-	}
-	return out
+// TODO: use a common implementation for definition containers
+func (p document) NumDefinitions() uint {
+	return uint(len(p.definitions))
 }
 
-func (p *document) insertDefinition(i uint, d definition) {
+func (p document) Definition(i uint) Definition {
+	return p.definitions[i]
+}
+
+func (p *document) insertDefinition(i uint, d Definition) {
 	p.definitions = append(p.definitions, nil)
 	copy(p.definitions[i+1:], p.definitions[i:])
 	p.definitions[i] = d
 }
 
-func (p *document) NewService() *service {
+func (p *document) NewService() Service {
 	return &service{
 		label: label{
 			parent: p,
@@ -68,7 +74,7 @@ func (p *document) NewService() *service {
 	}
 }
 
-func (p *document) NewMessage() *message {
+func (p *document) NewMessage() Message {
 	return &message{
 		parent: p,
 		label: label{
@@ -77,8 +83,8 @@ func (p *document) NewMessage() *message {
 	}
 }
 
-func (p *document) NewEnum() enum {
-	return enum{
+func (p *document) NewEnum() Enum {
+	return &enum{
 		parent: p,
 		label: label{
 			parent: p,

@@ -13,7 +13,9 @@ func TestProtocolSetPackage(t *testing.T) {
 	p := protobuf.NewDocument()
 	err := p.SetPackage("package")
 	require.Nil(t, err)
-	assert.Equal(t, "package", p.GetPackage().String())
+	pkg := p.GetPackage()
+	require.NotNil(t, pkg)
+	assert.Equal(t, "package", *pkg)
 }
 
 func TestProtocolSetInvalidPackage(t *testing.T) {
@@ -88,7 +90,7 @@ func TestMessageAddField(t *testing.T) {
 
 	err = f.InsertIntoParent(0)
 	require.Nil(t, err)
-	assert.NotEmpty(t, m.GetFields())
+	assert.EqualValues(t, 1, m.NumFields())
 }
 
 func TestEnumAddField(t *testing.T) {
@@ -102,7 +104,7 @@ func TestEnumAddField(t *testing.T) {
 
 	err = f.InsertIntoParent(0)
 	require.Nil(t, err)
-	assert.NotEmpty(t, e.GetFields())
+	assert.EqualValues(t, 1, e.NumFields())
 }
 
 func TestEnumerationSetInvalidProperties(t *testing.T) {
@@ -216,14 +218,14 @@ func TestValidateReservedNumber(t *testing.T) {
 	r := m.NewReservedNumbers()
 	err := r.InsertNumber(0, 1)
 	require.Nil(t, err)
-	require.Len(t, r.GetNumbers(), 1)
+	require.EqualValues(t, 1, r.NumNumbers())
 
 	err = r.ToRange(0, 10)
 	require.Nil(t, err)
 
 	err = r.InsertNumber(1, 2)
 	require.NotNil(t, err)
-	require.Len(t, r.GetNumbers(), 1)
+	require.EqualValues(t, 1, r.NumNumbers())
 
 	err = r.InsertNumber(1, 11)
 	require.Nil(t, err)
@@ -231,11 +233,7 @@ func TestValidateReservedNumber(t *testing.T) {
 	err = r.ToRange(1, 20)
 	require.Nil(t, err)
 
-	type number interface {
-		SetStart(uint) error
-		SetEnd(uint) error
-	}
-	nr, ok := r.GetNumbers()[1].(number)
+	nr, ok := r.Number(1).(protobuf.NumberRange)
 	require.True(t, ok)
 	err = nr.SetStart(9)
 	require.NotNil(t, err)

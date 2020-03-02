@@ -7,17 +7,18 @@ import (
 
 type reservedNumbers struct {
 	numbers []fieldNumber
-	parent  definition
+	parent  Definition
 }
 
-type fieldNumber interface {
-	intersects(fieldNumber) bool
+func (r reservedNumbers) NumNumbers() uint {
+	return uint(len(r.numbers))
 }
 
-func (r reservedNumbers) GetNumbers() []fieldNumber {
-	return r.numbers
+func (r reservedNumbers) Number(i uint) fieldNumber {
+	return r.numbers[i]
 }
 
+// TODO: maybe this assumes to much about how the UI will behave, and we should instead have an interface consistent with the other containers: r.NewNumber(), r.NewNumberRange(), etc.
 func (r *reservedNumbers) InsertNumber(i uint, n uint) error {
 	// check self-consistency in case range was not yet added to parent
 	if err := r.validateNumber(number(n)); err != nil {
@@ -82,12 +83,12 @@ func (r *reservedNumbers) InsertIntoParent(i uint) error {
 		return errors.New("reserved numbers need at least one entry")
 	}
 	switch p := r.parent.(type) {
-	case *enum:
+	case Enum:
 		if err := r.validateAsEnumField(); err != nil {
 			return err
 		}
 		p.insertField(i, r)
-	case *message:
+	case Message:
 		if err := r.validateAsMessageField(); err != nil {
 			return err
 		}
@@ -98,17 +99,17 @@ func (r *reservedNumbers) InsertIntoParent(i uint) error {
 	return nil
 }
 
-func (e reservedNumbers) validateAsEnumField() error {
+func (r reservedNumbers) validateAsEnumField() error {
 	panic("not implemented")
 }
 
-func (e reservedNumbers) validateAsMessageField() error {
+func (r reservedNumbers) validateAsMessageField() error {
 	panic("not implemented")
 }
 
 type reservedLabels struct {
 	labels []identifier
-	parent definition
+	parent Definition
 }
 
 func (r reservedLabels) GetLabels() []string {
@@ -121,12 +122,12 @@ func (r reservedLabels) InsertLabel(index uint, n string) error {
 
 func (r *reservedLabels) InsertIntoParent(i uint) error {
 	switch p := r.parent.(type) {
-	case *enum:
+	case Enum:
 		if err := r.validateAsEnumField(); err != nil {
 			return err
 		}
 		p.insertField(i, r)
-	case *message:
+	case Message:
 		if err := r.validateAsMessageField(); err != nil {
 			return err
 		}

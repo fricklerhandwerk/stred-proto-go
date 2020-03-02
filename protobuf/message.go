@@ -8,17 +8,16 @@ import (
 type message struct {
 	label
 	fields      []messageField
-	definitions []definition
+	definitions []Definition
 	parent      definitionContainer
 }
 
-type messageField interface {
-	InsertIntoParent(uint) error
-	validateAsMessageField() error
+func (m message) NumFields() uint {
+	return uint(len(m.fields))
 }
 
-func (m message) GetFields() []messageField {
-	return m.fields
+func (m message) Field(i uint) messageField {
+	return m.fields[i]
 }
 
 func (m *message) insertField(i uint, field messageField) {
@@ -73,7 +72,7 @@ func (m *message) NewReservedLabels() *reservedLabels {
 	}
 }
 
-func (m *message) NewMessage() *message {
+func (m *message) NewMessage() Message {
 	return &message{
 		parent: m,
 		label: label{
@@ -82,7 +81,7 @@ func (m *message) NewMessage() *message {
 	}
 }
 
-func (m *message) NewEnum() *enum {
+func (m *message) NewEnum() Enum {
 	return &enum{
 		parent: m,
 		label: label{
@@ -91,12 +90,19 @@ func (m *message) NewEnum() *enum {
 	}
 }
 
-func (m message) GetDefinitions() []definition {
-	panic("not implemented")
+// TODO: use a common implementation for definition containers
+func (m message) NumDefinitions() uint {
+	return uint(len(m.definitions))
 }
 
-func (m *message) insertDefinition(i uint, d definition) {
-	panic("not implemented")
+func (m message) Definition(i uint) Definition {
+	return m.definitions[i]
+}
+
+func (m *message) insertDefinition(i uint, d Definition) {
+	m.definitions = append(m.definitions, nil)
+	copy(m.definitions[i+1:], m.definitions[i:])
+	m.definitions[i] = d
 }
 
 func (m *message) InsertIntoParent(i uint) (err error) {
@@ -116,11 +122,15 @@ func (m message) validateLabel(l identifier) error {
 	if err := l.validate(); err != nil {
 		return err
 	}
+	// TODO: definitions and fields share a namespace
+	// TODO: the assumption is that the declaration with this identifier was not
+	// inserted yet. but we must also be able to perform a recursive validation
+	// before inserting the message into a definition container...
 	for _, f := range m.fields {
 		switch field := f.(type) {
 		case *repeatableField:
 			if field.GetLabel() == l.String() {
-				return errors.New(fmt.Sprintf("label %q already declared", l.String()))
+				return fmt.Errorf("label %q already declared", l.String())
 			}
 		case *mapField:
 			panic("not implemented")
@@ -198,6 +208,23 @@ func (m message) validateNumberRange(n *numberRange) error {
 		}
 	}
 	return nil
+}
+
+func (m message) validateAsDefinition() (err error) {
+	if err = m.parent.validateLabel(m.label.label); err != nil {
+		return
+	}
+	for _, f := range m.fields {
+		if err = f.validateAsMessageField(); err != nil {
+			return
+		}
+	}
+	for _, d := range m.definitions {
+		if err = d.validateAsDefinition(); err != nil {
+			return
+		}
+	}
+	return
 }
 
 func (m *message) _fieldType() {}

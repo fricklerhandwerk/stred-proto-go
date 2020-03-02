@@ -6,11 +6,11 @@ type field struct {
 	label
 	number     uint
 	deprecated bool
-	parent     definition
+	parent     Definition
 }
 
 func (f field) GetNumber() uint {
-	return uint(f.number)
+	return f.number
 }
 
 func (f *field) SetNumber(n uint) error {
@@ -32,10 +32,6 @@ func (f *field) SetDeprecated(b bool) {
 type typedField struct {
 	field
 	_type fieldType
-}
-
-type fieldType interface {
-	_fieldType()
 }
 
 func (f typedField) GetType() fieldType {

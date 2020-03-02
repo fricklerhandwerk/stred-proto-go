@@ -5,30 +5,6 @@ import (
 	"regexp"
 )
 
-type declaration interface {
-	GetLabel() string
-	SetLabel(string) error
-}
-
-type declarationContainer interface {
-	validateLabel(identifier) error
-}
-
-type definitionContainer interface {
-	declarationContainer
-
-	GetDefinitions() []definition
-	insertDefinition(index uint, def definition)
-}
-
-type definition interface {
-	declaration
-	declarationContainer
-
-	validateNumber(fieldNumber) error
-	InsertIntoParent(uint) error
-}
-
 // TODO: probably there is no need to have an extra type here, and validation
 // can be done in a function
 type identifier string

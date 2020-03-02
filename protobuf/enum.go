@@ -13,11 +13,6 @@ type enum struct {
 	parent     definitionContainer
 }
 
-type enumField interface {
-	InsertIntoParent(uint) error
-	validateAsEnumField() error
-}
-
 func (e *enum) SetAlias(b bool) error {
 	if !b && e.allowAlias {
 		// check if aliasing is in place
@@ -49,8 +44,12 @@ func (e enum) GetAlias() bool {
 	return e.allowAlias
 }
 
-func (e enum) GetFields() []enumField {
-	return e.fields
+func (e enum) NumFields() uint {
+	return uint(len(e.fields))
+}
+
+func (e enum) Field(i uint) enumField {
+	return e.fields[i]
 }
 
 func (e *enum) insertField(i uint, field enumField) {
@@ -73,6 +72,14 @@ func (e *enum) NewField() *enumeration {
 	}
 }
 
+func (e *enum) NewReservedNumbers() *reservedNumbers {
+	panic("not implemented")
+}
+
+func (e *enum) NewReservedLabels() *reservedLabels {
+	panic("not implemented")
+}
+
 func (e enum) validateLabel(l identifier) error {
 	if err := l.validate(); err != nil {
 		return err
@@ -81,12 +88,12 @@ func (e enum) validateLabel(l identifier) error {
 		switch field := f.(type) {
 		case *enumeration:
 			if field.GetLabel() == l.String() {
-				return errors.New(fmt.Sprintf("label %s already declared", l.String()))
+				return fmt.Errorf("label %s already declared", l.String())
 			}
 		case *reservedLabels:
 			for _, r := range field.GetLabels() {
 				if r == l.String() {
-					return errors.New(fmt.Sprintf("label %s already declared", l.String()))
+					return fmt.Errorf("label %s already declared", l.String())
 				}
 			}
 		case *reservedNumbers:
@@ -147,6 +154,17 @@ func (e *enum) InsertIntoParent(i uint) (err error) {
 	return
 }
 
+func (e enum) validateAsDefinition() (err error) {
+	if err = e.parent.validateLabel(e.label.label); err != nil {
+		return
+	}
+	for _, f := range e.fields {
+		if err = f.validateAsEnumField(); err != nil {
+			return
+		}
+	}
+	return
+}
 func (e *enum) _fieldType() {}
 
 type enumeration struct {
