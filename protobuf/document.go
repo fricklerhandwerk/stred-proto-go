@@ -25,11 +25,14 @@ func (p document) GetPackage() *string {
 }
 
 func (p *document) SetPackage(pkg string) error {
-	ident := identifier(pkg)
+	ident := &identifier{
+		value:  pkg,
+		parent: p,
+	}
 	if err := ident.validate(); err != nil {
 		return err
 	}
-	p._package = &ident
+	p._package = ident
 	return nil
 }
 
@@ -79,21 +82,25 @@ func (p *document) NewService() Service {
 }
 
 func (p *document) NewMessage() Message {
-	return &message{
+	out := &message{
 		parent: p,
 		label: label{
 			parent: p,
 		},
 	}
+	out.label.identifier.parent = out
+	return out
 }
 
 func (p *document) NewEnum() Enum {
-	return &enum{
+	out := &enum{
 		parent: p,
 		label: label{
 			parent: p,
 		},
 	}
+	out.label.identifier.parent = out
+	return out
 }
 
 type _import struct {

@@ -4,20 +4,22 @@ import "errors"
 
 type field struct {
 	label
-	number     uint
+	number     *number
 	deprecated bool
 	parent     Definition
 }
 
 func (f field) GetNumber() uint {
-	return f.number
+	return f.number.value
 }
 
 func (f *field) SetNumber(n uint) error {
-	if err := f.parent.validateNumber(number(n)); err != nil {
+	old := f.number.value
+	f.number.value = n
+	if err := f.parent.validateNumber(f.number); err != nil {
+		f.number.value = old
 		return err
 	}
-	f.number = n
 	return nil
 }
 
@@ -30,7 +32,7 @@ func (f *field) SetDeprecated(b bool) {
 }
 
 func (f field) hasNumber(n fieldNumber) bool {
-	return n.intersects(number(f.GetNumber()))
+	return n.intersects(f.number)
 }
 
 type typedField struct {
@@ -71,11 +73,11 @@ func (r *repeatableField) InsertIntoParent(i uint) error {
 }
 
 func (r *repeatableField) validateAsMessageField() (err error) {
-	err = r.parent.validateLabel(identifier(r.GetLabel()))
+	err = r.parent.validateLabel(r.identifier)
 	if err != nil {
 		return err
 	}
-	err = r.parent.validateNumber(number(r.GetNumber()))
+	err = r.parent.validateNumber(r.number)
 	if err != nil {
 		return err
 	}
@@ -113,7 +115,7 @@ func (o *oneOf) validateAsMessageField() error {
 
 func (o oneOf) hasNumber(n fieldNumber) bool {
 	for _, f := range o.fields {
-		if n.intersects(number(f.GetNumber())) {
+		if n.intersects(f.number) {
 			return true
 		}
 	}
@@ -144,11 +146,11 @@ func (m *mapField) InsertIntoParent(i uint) error {
 }
 
 func (m *mapField) validateAsMessageField() error {
-	err := m.parent.validateLabel(identifier(m.GetLabel()))
+	err := m.parent.validateLabel(m.label.identifier)
 	if err != nil {
 		return err
 	}
-	err = m.parent.validateNumber(number(m.GetNumber()))
+	err = m.parent.validateNumber(m.number)
 	if err != nil {
 		return err
 	}

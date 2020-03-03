@@ -18,15 +18,21 @@ func (r reservedNumbers) Number(i uint) fieldNumber {
 	return r.numbers[i]
 }
 
-// TODO: maybe this assumes to much about how the UI will behave, and we should instead have an interface consistent with the other containers: r.NewNumber(), r.NewNumberRange(), etc.
+// TODO: maybe this assumes to much about how the UI will behave, and we should
+// instead have an interface consistent with the other containers:
+// r.NewNumber(), r.NewNumberRange(), etc.
 func (r *reservedNumbers) InsertNumber(i uint, n uint) error {
 	// check self-consistency in case range was not yet added to parent
-	if err := r.validateNumber(number(n)); err != nil {
+	num := &number{
+		value:     n,
+		container: r.parent,
+	}
+	if err := r.validateNumber(num); err != nil {
 		return err
 	}
 	r.numbers = append(r.numbers, nil)
 	copy(r.numbers[i+1:], r.numbers[i:])
-	r.numbers[i] = number(n)
+	r.numbers[i] = num
 	return nil
 }
 
@@ -56,20 +62,24 @@ func (r *reservedNumbers) validateNumber(n fieldNumber) error {
 // is actually of type `number`. but then we have to rework that type...
 func (r *reservedNumbers) ToRange(i uint, end uint) error {
 	var (
-		start number
+		start *number
 		ok    bool
 	)
-	if start, ok = r.numbers[i].(number); !ok {
+	if start, ok = r.numbers[i].(*number); !ok {
 		// TODO: probably panic here, should not happen
 		return errors.New("reserved field must be a single number")
 	}
 	nr := &numberRange{
 		parent: r,
 		start:  start,
+		end: &number{
+			container: r,
+			parent:    r,
+		},
 	}
 	r.numbers[i] = nr // otherwise old value will be part of the check
 	if err := nr.SetEnd(end); err != nil {
-		r.numbers[i] = number(start)
+		r.numbers[i] = start
 		return err
 	}
 	return nil

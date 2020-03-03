@@ -34,14 +34,18 @@ type definitionContainer interface {
 
 type Definition interface {
 	declaration
+	numberContainer
 
 	InsertIntoParent(uint) error
 	NumFields() uint
 	NewReservedNumbers() *reservedNumbers
 	NewReservedLabels() *reservedLabels
 
-	validateNumber(n fieldNumber) error
 	validateAsDefinition() error
+}
+
+type numberContainer interface {
+	validateNumber(n fieldNumber) error
 }
 
 type Message interface {
@@ -87,12 +91,14 @@ type enumField interface {
 
 type fieldNumber interface {
 	intersects(fieldNumber) bool
+	getParent() interface{}
 }
 
 type Number interface {
 	fieldNumber
 
 	GetValue() uint
+	SetValue(uint) error
 }
 
 type NumberRange interface {

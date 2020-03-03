@@ -61,15 +61,21 @@ func (e *enum) insertField(i uint, field enumField) {
 }
 
 func (e *enum) NewField() *enumeration {
-	return &enumeration{
+	out := &enumeration{
 		parent: e,
 		field: field{
 			parent: e,
 			label: label{
 				parent: e,
 			},
+			number: &number{
+				container: e,
+			},
 		},
 	}
+	out.identifier.parent = out
+	out.number.parent = out
+	return out
 }
 
 func (e *enum) NewReservedNumbers() *reservedNumbers {
@@ -87,7 +93,7 @@ func (e enum) validateLabel(l identifier) error {
 		return err
 	}
 	for _, f := range e.fields {
-		if f != nil && f.hasLabel(l.String()) {
+		if f != l.parent && f.hasLabel(l.String()) {
 			return fmt.Errorf("label %s already declared", l.String())
 		}
 	}
@@ -98,25 +104,31 @@ func (e enum) validateNumber(n fieldNumber) error {
 	// TODO: check valid values
 	// https://developers.google.com/protocol-buffers/docs/proto3#assigning-field-numbers
 	for _, f := range e.fields {
-		if f != nil && f.hasNumber(n) {
+		if f != n.getParent() && f.hasNumber(n) {
 			switch f.(type) {
 			case *enumeration:
-				switch num := n.(type) {
-				case Number:
+				switch n.getParent().(type) {
+				case *enumeration:
 					if e.allowAlias {
-						// TODO: without additional information it is not clear which field
-						// type this number belongs to. if it is a `reservedNumbers` field,
-						// aliasing is still not allowed
 						return nil
 					}
 					lines := []string{
-						fmt.Sprintf("field number %d already in use.", num.GetValue()),
+						fmt.Sprintf("field number %d already in use.", n.(Number).GetValue()),
 						fmt.Sprintf("set %q to allow multiple labels for one number.", "allow_alias = true"),
 					}
 					return errors.New(strings.Join(lines, " "))
 				}
 			}
-			return fmt.Errorf("field number %s already in use", n)
+			var source string
+			switch v := n.(type) {
+			case Number:
+				source = fmt.Sprintf("field number %d", v.GetValue())
+			case NumberRange:
+				source = fmt.Sprintf("range %d to %d", v.GetStart(), v.GetEnd())
+			default:
+				panic(fmt.Sprintf("unhandled number type %T", n))
+			}
+			return fmt.Errorf("%s already in use", source)
 		}
 	}
 	return nil
@@ -133,15 +145,8 @@ func (e *enum) InsertIntoParent(i uint) (err error) {
 }
 
 func (e *enum) validateAsDefinition() (err error) {
-	if err = e.parent.validateLabel(e.label.label); err != nil {
+	if err = e.parent.validateLabel(e.identifier); err != nil {
 		return
-	}
-	for i, f := range e.fields {
-		e.fields[i] = nil
-		defer func() { e.fields[i] = f }()
-		if err = f.validateAsEnumField(); err != nil {
-			return
-		}
 	}
 	return
 }
@@ -162,11 +167,11 @@ func (e *enumeration) InsertIntoParent(i uint) error {
 }
 
 func (e *enumeration) validateAsEnumField() (err error) {
-	err = e.parent.validateLabel(identifier(e.GetLabel()))
+	err = e.parent.validateLabel(e.identifier)
 	if err != nil {
 		return err
 	}
-	err = e.parent.validateNumber(number(e.GetNumber()))
+	err = e.parent.validateNumber(e.number)
 	if err != nil {
 		return err
 	}

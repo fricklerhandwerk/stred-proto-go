@@ -7,7 +7,10 @@ import (
 
 // TODO: probably there is no need to have an extra type here, and validation
 // can be done in a function
-type identifier string
+type identifier struct {
+	value  string
+	parent interface{}
+}
 
 func (i identifier) validate() error {
 	pattern := "[a-zA-Z]([0-9a-zA-Z_])*"
@@ -26,24 +29,25 @@ func (i *identifier) String() string {
 	if i == nil {
 		return ""
 	}
-	return string(*i)
+	return i.value
 }
 
 type label struct {
-	label  identifier
-	parent declarationContainer
+	identifier identifier
+	parent     declarationContainer
 }
 
 func (d label) GetLabel() string {
-	return d.label.String()
+	return d.identifier.String()
 }
 
 func (d *label) SetLabel(label string) error {
-	ident := identifier(label)
-	if err := d.parent.validateLabel(ident); err != nil {
+	old := d.identifier.value
+	d.identifier.value = label
+	if err := d.parent.validateLabel(d.identifier); err != nil {
+		d.identifier.value = old
 		return err
 	}
-	d.label = ident
 	return nil
 }
 
