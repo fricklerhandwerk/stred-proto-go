@@ -1,10 +1,8 @@
 package main
 
-import (
-	"fmt"
-)
+import "github.com/fricklerhandwerk/stred-proto/ui"
 
 func main() {
-	fmt.Printf("syntax = \"proto3\"\n")
+	ui.Draw()
 	return
 }
