@@ -216,42 +216,47 @@ func TestMessageInsertInvalidField(t *testing.T) {
 func TestMessageValidateReservedNumber(t *testing.T) {
 	m := protobuf.NewDocument().NewMessage()
 	r := m.NewReservedNumbers()
-
 	err := r.InsertNumber(0, 0)
 	require.NotNil(t, err)
-
 	err = r.InsertNumber(0, 1)
 	require.Nil(t, err)
 	require.EqualValues(t, 1, r.NumNumbers())
 
-	err = r.ToRange(0, 10)
-	require.Nil(t, err)
-
-	err = r.InsertNumber(1, 2)
+	nr := r.NewRange()
+	err = nr.SetStart(0)
 	require.NotNil(t, err)
-	require.EqualValues(t, 1, r.NumNumbers())
-
-	err = r.InsertNumber(1, 12)
+	err = nr.SetStart(1)
+	require.NotNil(t, err)
+	err = nr.SetStart(2)
+	require.Nil(t, err)
+	err = nr.SetEnd(10)
+	require.Nil(t, err)
+	require.EqualValues(t, 2, nr.GetStart())
+	require.EqualValues(t, 10, nr.GetEnd())
+	err = nr.InsertIntoParent(1)
 	require.Nil(t, err)
 
-	err = r.ToRange(1, 11)
+	nr2 := r.NewRange()
+	err = nr2.SetStart(11)
+	require.EqualValues(t, 11, nr2.GetStart())
+	require.Nil(t, err)
+	err = nr2.SetEnd(20)
+	require.Nil(t, err)
+	err = nr.InsertIntoParent(2)
+
+	err = nr2.SetStart(10)
 	require.NotNil(t, err)
 
-	err = r.ToRange(1, 20)
-	require.Nil(t, err)
+	switch n := r.Number(0).(type) {
+	case protobuf.Number:
+		err = n.SetValue(21)
+		require.Nil(t, err)
+	default:
+		require.FailNow(t, "value is not a Number")
+	}
 
-	nr, ok := r.Number(1).(protobuf.NumberRange)
-	require.True(t, ok)
-	err = nr.SetStart(9)
+	err = nr2.SetEnd(21)
 	require.NotNil(t, err)
-	err = nr.SetStart(13)
-	require.Nil(t, err)
-
-	err = nr.SetEnd(13)
-	require.NotNil(t, err)
-
-	err = nr.SetEnd(22)
-	require.Nil(t, err)
 }
 
 func TestEnumValidateReservedNumber(t *testing.T) {
@@ -261,37 +266,38 @@ func TestEnumValidateReservedNumber(t *testing.T) {
 	require.Nil(t, err)
 	require.EqualValues(t, 1, r.NumNumbers())
 
-	err = r.ToRange(0, 10)
-	require.Nil(t, err)
-
-	err = r.InsertNumber(1, 2)
+	nr := r.NewRange()
+	err = nr.SetStart(0)
 	require.NotNil(t, err)
-	require.EqualValues(t, 1, r.NumNumbers())
-
-	err = r.InsertNumber(1, 12)
+	err = nr.SetStart(1)
 	require.Nil(t, err)
-
-	err = r.ToRange(1, 11)
-	require.NotNil(t, err)
-
-	err = r.ToRange(1, 20)
+	err = nr.SetEnd(10)
 	require.Nil(t, err)
+	err = nr.InsertIntoParent(1)
 
-	nr, ok := r.Number(1).(protobuf.NumberRange)
-	require.True(t, ok)
-	err = nr.SetStart(9)
-	require.NotNil(t, err)
-	err = nr.SetStart(13)
+	nr2 := r.NewRange()
+	err = nr2.SetStart(11)
 	require.Nil(t, err)
+	err = nr2.SetEnd(20)
+	require.Nil(t, err)
+	err = nr.InsertIntoParent(2)
 
-	err = nr.SetEnd(13)
+	err = nr2.SetStart(10)
 	require.NotNil(t, err)
 
-	err = nr.SetEnd(22)
-	require.Nil(t, err)
+	switch n := r.Number(0).(type) {
+	case protobuf.Number:
+		err = n.SetValue(21)
+		require.Nil(t, err)
+	default:
+		require.FailNow(t, "value is not a Number")
+	}
+
+	err = nr2.SetEnd(21)
+	require.NotNil(t, err)
 }
 
-func TestMessageValidateRecursive(t *testing.T) {
+func TestMessageValidateDefinition(t *testing.T) {
 	p := protobuf.NewDocument()
 
 	m := p.NewMessage()
@@ -322,7 +328,7 @@ func TestMessageValidateRecursive(t *testing.T) {
 	require.Nil(t, err)
 }
 
-func TestEnumValidateRecursive(t *testing.T) {
+func TestEnumValidateDefinition(t *testing.T) {
 	p := protobuf.NewDocument()
 
 	e := p.NewEnum()

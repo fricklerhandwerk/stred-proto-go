@@ -108,6 +108,7 @@ type NumberRange interface {
 	SetStart(uint) error
 	GetEnd() uint
 	SetEnd(uint) error
+	InsertIntoParent(uint) error
 }
 
 type fieldType interface {

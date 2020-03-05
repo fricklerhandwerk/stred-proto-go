@@ -18,21 +18,28 @@ func (r reservedNumbers) Number(i uint) fieldNumber {
 	return r.numbers[i]
 }
 
-// TODO: maybe this assumes to much about how the UI will behave, and we should
-// instead have an interface consistent with the other containers:
-// r.NewNumber(), r.NewNumberRange(), etc.
+func (r *reservedNumbers) NewRange() NumberRange {
+	return &numberRange{
+		parent: r,
+	}
+}
+
 func (r *reservedNumbers) InsertNumber(i uint, n uint) error {
-	// check self-consistency in case range was not yet added to parent
 	num := &number{
 		value:     n,
 		container: r.parent,
+		parent:    r,
 	}
-	if err := r.validateNumber(num); err != nil {
+	return r.insertNumber(i, num)
+}
+
+func (r *reservedNumbers) insertNumber(i uint, n fieldNumber) error {
+	if err := r.validateNumber(n); err != nil {
 		return err
 	}
 	r.numbers = append(r.numbers, nil)
 	copy(r.numbers[i+1:], r.numbers[i:])
-	r.numbers[i] = num
+	r.numbers[i] = n
 	return nil
 }
 
@@ -41,7 +48,7 @@ func (r *reservedNumbers) validateNumber(n fieldNumber) error {
 		if i != n && i.intersects(n) {
 			var source string
 			switch v := i.(type) {
-			case number:
+			case Number:
 				source = fmt.Sprintf("field number %d", v)
 			case *numberRange:
 				source = fmt.Sprintf("range %d to %d", v.GetStart(), v.GetEnd())
@@ -55,35 +62,6 @@ func (r *reservedNumbers) validateNumber(n fieldNumber) error {
 		return err
 	}
 	return nil
-}
-
-// TODO: this is a bad interface. the number in the list should instead be
-// converted directly, otherwise we have no guarantee that the underlying value
-// is actually of type `number`. but then we have to rework that type...
-func (r *reservedNumbers) ToRange(i uint, end uint) error {
-	var (
-		start *number
-		ok    bool
-	)
-	if start, ok = r.numbers[i].(*number); !ok {
-		// TODO: probably panic here, should not happen
-		return errors.New("reserved field must be a single number")
-	}
-	nr := &numberRange{
-		parent: r,
-		start:  start,
-		end: &number{
-			container: r,
-			parent:    r,
-		},
-	}
-	r.numbers[i] = nr // otherwise old value will be part of the check
-	if err := nr.SetEnd(end); err != nil {
-		r.numbers[i] = start
-		return err
-	}
-	return nil
-
 }
 
 func (r *reservedNumbers) InsertIntoParent(i uint) error {

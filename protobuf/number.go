@@ -69,37 +69,80 @@ func (r numberRange) getParent() interface{} {
 }
 
 func (r numberRange) GetStart() uint {
-	return r.start.value
+	return r.start.GetValue()
 }
 
-func (r *numberRange) SetStart(s uint) error {
-	if s >= r.end.value {
-		return errors.New("end of number range must be greater than start")
+func (r *numberRange) SetStart(s uint) (err error) {
+	if r.start != nil {
+		old := r.start.value
+		r.start.value = s
+
+		defer func() {
+			if err != nil {
+				r.start.value = old
+			}
+		}()
+	} else {
+		r.start = &number{
+			value:     s,
+			container: r.parent,
+			parent:    r,
+		}
+		defer func() {
+			if err != nil {
+				r.start = nil
+			}
+		}()
 	}
-	old := r.start.value
-	r.start.value = s
-	if err := r.parent.validateNumber(r); err != nil {
-		r.start.value = old
-		return err
+
+	if r.end != nil {
+		if s >= r.end.value {
+			return errors.New("end of number range must be greater than start")
+		}
+		return r.parent.validateNumber(r)
 	}
-	return nil
+	return r.parent.validateNumber(r.start)
 }
 
 func (r numberRange) GetEnd() uint {
-	return r.end.value
+	return r.end.GetValue()
 }
 
-func (r *numberRange) SetEnd(e uint) error {
-	if r.start.value >= e {
-		return errors.New("end of number range must be greater than start")
+func (r *numberRange) SetEnd(e uint) (err error) {
+	if r.end != nil {
+		old := r.end.value
+		r.end.value = e
+
+		defer func() {
+			if err != nil {
+				r.end.value = old
+			}
+		}()
+	} else {
+		r.end = &number{
+			value:     e,
+			container: r.parent,
+			parent:    r,
+		}
+		defer func() {
+			if err != nil {
+				r.end = nil
+			}
+		}()
 	}
-	old := r.end.value
-	r.end.value = e
-	if err := r.parent.validateNumber(r); err != nil {
-		r.end.value = old
-		return err
+
+	if r.start != nil {
+		if r.start.value >= e {
+			return errors.New("end of number range must be greater than start")
+		}
+		return r.parent.validateNumber(r)
 	}
-	return nil
+
+	return r.parent.validateNumber(r.end)
+}
+
+func (r *numberRange) InsertIntoParent(i uint) error {
+	return r.parent.insertNumber(i, r)
 }
 
 func (r *numberRange) intersects(other fieldNumber) bool {
