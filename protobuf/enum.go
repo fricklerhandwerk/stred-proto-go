@@ -52,12 +52,17 @@ func (e enum) Field(i uint) enumField {
 	return e.fields[i]
 }
 
-func (e *enum) insertField(i uint, field enumField) {
+func (e *enum) insertField(i uint, field enumField) error {
+	if err := field.validateAsEnumField(); err != nil {
+		// TODO: still counting on this becoming a panic instead
+		return err
+	}
 	// <https://github.com/golang/go/wiki/SliceTricks#insert>
 	// <https://stackoverflow.com/a/46130603/5147619>
 	e.fields = append(e.fields, nil)
 	copy(e.fields[i+1:], e.fields[i:])
 	e.fields[i] = field
+	return nil
 }
 
 func (e *enum) NewField() *enumeration {
@@ -135,21 +140,13 @@ func (e enum) validateNumber(n fieldNumber) error {
 }
 
 func (e *enum) InsertIntoParent(i uint) (err error) {
-	err = e.validateAsDefinition()
-	if err != nil {
-		// TODO: still counting on this becoming a panic instead
-		return
-	}
-	e.parent.insertDefinition(i, e)
-	return
+	return e.parent.insertDefinition(i, e)
 }
 
 func (e *enum) validateAsDefinition() (err error) {
-	if err = e.parent.validateLabel(e.identifier); err != nil {
-		return
-	}
-	return
+	return e.parent.validateLabel(e.identifier)
 }
+
 func (e *enum) _fieldType() {}
 
 type enumeration struct {
@@ -158,12 +155,7 @@ type enumeration struct {
 }
 
 func (e *enumeration) InsertIntoParent(i uint) error {
-	if err := e.validateAsEnumField(); err != nil {
-		// TODO: still counting on this becoming a panic instead
-		return err
-	}
-	e.parent.insertField(i, e)
-	return nil
+	return e.parent.insertField(i, e)
 }
 
 func (e *enumeration) validateAsEnumField() (err error) {

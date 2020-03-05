@@ -20,10 +20,15 @@ func (m message) Field(i uint) messageField {
 	return m.fields[i]
 }
 
-func (m *message) insertField(i uint, field messageField) {
+func (m *message) insertField(i uint, field messageField) error {
+	if err := field.validateAsMessageField(); err != nil {
+		// TODO: still counting on this becoming a panic instead
+		return err
+	}
 	m.fields = append(m.fields, nil)
 	copy(m.fields[i+1:], m.fields[i:])
 	m.fields[i] = field
+	return nil
 }
 
 func (m *message) newTypedField(parent interface{}) typedField {
@@ -114,19 +119,19 @@ func (m message) Definition(i uint) Definition {
 	return m.definitions[i]
 }
 
-func (m *message) insertDefinition(i uint, d Definition) {
+func (m *message) insertDefinition(i uint, d Definition) error {
+	if err := m.validateAsDefinition(); err != nil {
+		// TODO: still counting on this becoming a panic instead
+		return err
+	}
 	m.definitions = append(m.definitions, nil)
 	copy(m.definitions[i+1:], m.definitions[i:])
 	m.definitions[i] = d
+	return nil
 }
 
 func (m *message) InsertIntoParent(i uint) (err error) {
-	if err = m.validateAsDefinition(); err != nil {
-		// TODO: still counting on this becoming a panic instead
-		return
-	}
-	m.parent.insertDefinition(i, m)
-	return
+	return m.parent.insertDefinition(i, m)
 }
 
 func (m message) validateLabel(l identifier) error {

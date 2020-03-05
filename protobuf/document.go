@@ -67,10 +67,15 @@ func (p document) Definition(i uint) Definition {
 	return p.definitions[i]
 }
 
-func (p *document) insertDefinition(i uint, d Definition) {
+func (p *document) insertDefinition(i uint, d Definition) error {
+	if err := d.validateAsDefinition(); err != nil {
+		// TODO: still counting on this becoming a panic instead
+		return err
+	}
 	p.definitions = append(p.definitions, nil)
 	copy(p.definitions[i+1:], p.definitions[i:])
 	p.definitions[i] = d
+	return nil
 }
 
 func (p *document) NewService() Service {

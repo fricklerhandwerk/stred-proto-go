@@ -29,7 +29,7 @@ type definitionContainer interface {
 	NewMessage() Message
 	NewEnum() Enum
 
-	insertDefinition(index uint, def Definition)
+	insertDefinition(index uint, def Definition) error
 }
 
 type Definition interface {
@@ -58,7 +58,7 @@ type Message interface {
 	NewMap() *mapField
 	NewOneOf() *oneOf
 
-	insertField(uint, messageField)
+	insertField(uint, messageField) error
 }
 
 type messageField interface {
@@ -79,7 +79,7 @@ type Enum interface {
 
 	NewField() *enumeration
 
-	insertField(uint, enumField)
+	insertField(uint, enumField) error
 }
 
 type enumField interface {

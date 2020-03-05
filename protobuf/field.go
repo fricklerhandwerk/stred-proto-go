@@ -64,12 +64,7 @@ func (r repeatableField) GetRepeated() bool {
 }
 
 func (r *repeatableField) InsertIntoParent(i uint) error {
-	if err := r.validateAsMessageField(); err != nil {
-		// TODO: still counting on this becoming a panic instead
-		return err
-	}
-	r.parent.insertField(i, r)
-	return nil
+	return r.parent.insertField(i, r)
 }
 
 func (r *repeatableField) validateAsMessageField() (err error) {
@@ -102,11 +97,7 @@ func (o oneOf) InsertField(i uint, f typedField) error {
 }
 
 func (o *oneOf) InsertIntoParent(i uint) error {
-	if err := o.validateAsMessageField(); err != nil {
-		return err
-	}
-	o.parent.insertField(i, o)
-	return nil
+	return o.parent.insertField(i, o)
 }
 
 func (o *oneOf) validateAsMessageField() error {
@@ -138,11 +129,7 @@ func (m mapField) SetKeyType(k keyType) {
 }
 
 func (m *mapField) InsertIntoParent(i uint) error {
-	if err := m.validateAsMessageField(); err != nil {
-		return err
-	}
-	m.parent.insertField(i, m)
-	return nil
+	return m.parent.insertField(i, m)
 }
 
 func (m *mapField) validateAsMessageField() error {
