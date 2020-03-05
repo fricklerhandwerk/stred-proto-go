@@ -74,12 +74,12 @@ func (e *enum) NewField() *enumeration {
 				parent: e,
 			},
 			number: &number{
-				container: e,
+				parent: e,
 			},
 		},
 	}
 	out.identifier.parent = out
-	out.number.parent = out
+	out.number.integer.parent = out
 	return out
 }
 

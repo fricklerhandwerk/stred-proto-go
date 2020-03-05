@@ -26,9 +26,11 @@ func (r *reservedNumbers) NewRange() NumberRange {
 
 func (r *reservedNumbers) InsertNumber(i uint, n uint) error {
 	num := &number{
-		value:     n,
-		container: r.parent,
-		parent:    r,
+		parent: r.parent,
+		integer: integer{
+			value:  n,
+			parent: r,
+		},
 	}
 	return r.insertNumber(i, num)
 }
@@ -44,6 +46,15 @@ func (r *reservedNumbers) insertNumber(i uint, n fieldNumber) error {
 }
 
 func (r *reservedNumbers) validateNumber(n fieldNumber) error {
+	switch v := n.(type) {
+	case *numberRange:
+		if v.start == nil {
+			return fmt.Errorf("number range has no start")
+		}
+		if v.end == nil {
+			return fmt.Errorf("number range has no end")
+		}
+	}
 	for _, i := range r.numbers {
 		if i != n && i.intersects(n) {
 			var source string

@@ -42,8 +42,10 @@ func (m *message) newTypedField(parent interface{}) typedField {
 				},
 			},
 			number: &number{
-				container: m,
-				parent:    parent,
+				parent: m,
+				integer: integer{
+					parent: parent,
+				},
 			},
 		},
 	}
@@ -166,7 +168,7 @@ func (m message) validateNumber(n fieldNumber) error {
 		panic(fmt.Sprintf("unhandled field number type %T", v))
 	}
 	for _, f := range m.fields {
-		if f != nil && f.hasNumber(n) {
+		if f != n.getParent() && f.hasNumber(n) {
 			return fmt.Errorf("field number %s already in use", n)
 		}
 	}

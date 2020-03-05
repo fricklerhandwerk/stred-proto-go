@@ -356,3 +356,12 @@ func TestEnumValidateDefinition(t *testing.T) {
 	err = e.InsertIntoParent(0)
 	require.Nil(t, err)
 }
+
+func TestInsertIncompleteRange(t *testing.T) {
+	rn := protobuf.NewDocument().NewEnum().NewReservedNumbers()
+	r := rn.NewRange()
+	err := r.SetStart(1)
+	require.Nil(t, err)
+	err = r.InsertIntoParent(0)
+	require.NotNil(t, err)
+}

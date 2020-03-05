@@ -33,8 +33,8 @@ func (i *identifier) String() string {
 }
 
 type label struct {
-	identifier identifier
-	parent     declarationContainer
+	identifier
+	parent declarationContainer
 }
 
 func (d label) GetLabel() string {
