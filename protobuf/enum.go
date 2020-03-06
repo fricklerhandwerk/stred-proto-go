@@ -73,12 +73,10 @@ func (e *enum) NewField() *enumeration {
 			label: &label{
 				parent: e,
 			},
-			number: &number{
-				parent: e,
-			},
+			number: &number{},
 		},
 	}
-	out.number.integer.parent = out
+	out.number.parent = out
 	return out
 }
 
@@ -113,16 +111,19 @@ func (e enum) validateNumber(n fieldNumber) error {
 		if f.hasNumber(n) {
 			switch f.(type) {
 			case *enumeration:
-				switch n.getParent().(type) {
-				case *enumeration:
-					if e.allowAlias {
-						return nil
+				switch n := n.(type) {
+				case *number:
+					switch n.parent.(type) {
+					case *enumeration:
+						if e.allowAlias {
+							return nil
+						}
+						lines := []string{
+							fmt.Sprintf("field number %d already in use.", n.value),
+							fmt.Sprintf("set %q to allow multiple labels for one number.", "allow_alias = true"),
+						}
+						return errors.New(strings.Join(lines, " "))
 					}
-					lines := []string{
-						fmt.Sprintf("field number %d already in use.", n.(Number).GetValue()),
-						fmt.Sprintf("set %q to allow multiple labels for one number.", "allow_alias = true"),
-					}
-					return errors.New(strings.Join(lines, " "))
 				}
 			}
 			var source string
@@ -169,4 +170,10 @@ func (e *enumeration) validateAsEnumField() (err error) {
 		return err
 	}
 	return nil
+}
+
+// this is a hack to be able to trace the parent of
+// a number, so we can validate enum aliasing
+func (e enumeration) validateNumber(n fieldNumber) error {
+	return e.parent.validateNumber(n)
 }

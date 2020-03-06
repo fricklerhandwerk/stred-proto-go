@@ -14,6 +14,8 @@ func (f field) GetNumber() uint {
 }
 
 func (f *field) SetNumber(n uint) error {
+	// TODO: number should probably be initialised as `nil` so UI can display it as
+	// not set, so check for that here
 	old := f.number.value
 	f.number.value = n
 	if err := f.parent.validateNumber(f.number); err != nil {

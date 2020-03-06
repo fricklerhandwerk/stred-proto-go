@@ -5,45 +5,23 @@ import (
 	"fmt"
 )
 
-// TODO: if you compare `number` with `label`, you see that `number` here
-// serves two purposes at once: it implements `fieldNumber` and is also
-// a numeric identifier base type, this is why we have an overlap between
-// `parent` and `container`. to have it consistent, it should look something
-// like this:
-//   type number struct {
-//     integer integer
-//     parent numberContainer
-//   }
-//   type integer {
-//     value uint
-//     parent interface{}
-//   }
-
-type integer struct {
-	value  uint
-	parent interface{}
-}
-
 type number struct {
-	integer
+	value  uint
 	parent numberContainer
 }
 
-func (i integer) intersects(other fieldNumber) bool {
+func (n number) intersects(other fieldNumber) bool {
 	switch o := other.(type) {
 	case *number:
-		return i.value == o.value
+		return n.value == o.value
 	case *numberRange:
-		return i.value >= o.start.value && i.value <= o.end.value
+		return n.value >= o.start.value && n.value <= o.end.value
 	default:
 		panic(fmt.Sprintf("unhandled fieldNumber type %T", o))
 	}
 }
 
-func (n number) getParent() interface{} {
-	return n.integer.parent
-}
-
+// TODO: try `SetNumber()` so we can embed this in fields
 func (n number) GetValue() uint {
 	return n.value
 }
@@ -59,15 +37,12 @@ func (n *number) SetValue(v uint) error {
 }
 
 type numberRange struct {
-	start  *integer
-	end    *integer
+	start  *number
+	end    *number
 	parent *reservedNumbers
 }
 
-func (r numberRange) getParent() interface{} {
-	return r.parent
-}
-
+// TODO: maybe this should be a pointer for easier distinction in UI
 func (r numberRange) GetStart() uint {
 	return r.start.value
 }
@@ -83,8 +58,8 @@ func (r *numberRange) SetStart(s uint) (err error) {
 			}
 		}()
 	} else {
-		r.start = &integer{
-			parent: r,
+		r.start = &number{
+			parent: r.parent,
 			value:  s,
 		}
 		defer func() {
@@ -100,11 +75,7 @@ func (r *numberRange) SetStart(s uint) (err error) {
 		}
 		return r.parent.validateNumber(r)
 	}
-	n := &number{
-		parent:  r.parent,
-		integer: *r.start,
-	}
-	return r.parent.validateNumber(n)
+	return r.parent.validateNumber(r.start)
 }
 
 func (r numberRange) GetEnd() uint {
@@ -122,9 +93,9 @@ func (r *numberRange) SetEnd(e uint) (err error) {
 			}
 		}()
 	} else {
-		r.end = &integer{
+		r.end = &number{
 			value:  e,
-			parent: r,
+			parent: r.parent,
 		}
 		defer func() {
 			if err != nil {
@@ -140,11 +111,7 @@ func (r *numberRange) SetEnd(e uint) (err error) {
 		return r.parent.validateNumber(r)
 	}
 
-	n := &number{
-		parent:  r.parent,
-		integer: *r.end,
-	}
-	return r.parent.validateNumber(n)
+	return r.parent.validateNumber(r.end)
 }
 
 func (r *numberRange) InsertIntoParent(i uint) error {

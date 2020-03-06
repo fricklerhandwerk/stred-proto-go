@@ -92,7 +92,6 @@ type enumField interface {
 
 type fieldNumber interface {
 	intersects(fieldNumber) bool
-	getParent() interface{}
 }
 
 type Number interface {

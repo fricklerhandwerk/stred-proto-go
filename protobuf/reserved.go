@@ -27,10 +27,7 @@ func (r *reservedNumbers) NewRange() NumberRange {
 func (r *reservedNumbers) InsertNumber(i uint, n uint) error {
 	num := &number{
 		parent: r,
-		integer: integer{
-			value:  n,
-			parent: r,
-		},
+		value:  n,
 	}
 	return r.insertNumber(i, num)
 }

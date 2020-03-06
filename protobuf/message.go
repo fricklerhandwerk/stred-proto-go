@@ -40,9 +40,6 @@ func (m *message) newTypedField(parent interface{}) typedField {
 			},
 			number: &number{
 				parent: m,
-				integer: integer{
-					parent: parent,
-				},
 			},
 		},
 	}
