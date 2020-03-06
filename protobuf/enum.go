@@ -71,7 +71,8 @@ func (e *enum) NewField() *enumeration {
 		field: field{
 			parent: e,
 			label: label{
-				parent: e,
+				parent:     e,
+				identifier: &identifier{},
 			},
 			number: &number{
 				parent: e,
@@ -90,15 +91,17 @@ func (e *enum) NewReservedNumbers() *reservedNumbers {
 }
 
 func (e *enum) NewReservedLabels() *reservedLabels {
-	panic("not implemented")
+	return &reservedLabels{
+		parent: e,
+	}
 }
 
-func (e enum) validateLabel(l identifier) error {
+func (e enum) validateLabel(l *identifier) error {
 	if err := l.validate(); err != nil {
 		return err
 	}
 	for _, f := range e.fields {
-		if f != l.parent && f.hasLabel(l.String()) {
+		if f.hasLabel(l) {
 			return fmt.Errorf("label %s already declared", l.String())
 		}
 	}
@@ -109,7 +112,7 @@ func (e enum) validateNumber(n fieldNumber) error {
 	// TODO: check valid values
 	// https://developers.google.com/protocol-buffers/docs/proto3#assigning-field-numbers
 	for _, f := range e.fields {
-		if f != n.getParent() && f.hasNumber(n) {
+		if f.hasNumber(n) {
 			switch f.(type) {
 			case *enumeration:
 				switch n.getParent().(type) {

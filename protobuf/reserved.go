@@ -26,7 +26,7 @@ func (r *reservedNumbers) NewRange() NumberRange {
 
 func (r *reservedNumbers) InsertNumber(i uint, n uint) error {
 	num := &number{
-		parent: r.parent,
+		parent: r,
 		integer: integer{
 			value:  n,
 			parent: r,
@@ -81,19 +81,12 @@ func (r *reservedNumbers) InsertIntoParent(i uint) error {
 	}
 	switch p := r.parent.(type) {
 	case Enum:
-		if err := r.validateAsEnumField(); err != nil {
-			return err
-		}
-		p.insertField(i, r)
+		return p.insertField(i, r)
 	case Message:
-		if err := r.validateAsMessageField(); err != nil {
-			return err
-		}
-		p.insertField(i, r)
+		return p.insertField(i, r)
 	default:
 		panic(fmt.Sprintf("unhandled parent type %T", p))
 	}
-	return nil
 }
 
 func (r reservedNumbers) validateAsEnumField() error {
@@ -104,13 +97,13 @@ func (r reservedNumbers) validateAsMessageField() error {
 	panic("not implemented")
 }
 
-func (r reservedNumbers) hasLabel(l string) bool {
+func (r reservedNumbers) hasLabel(l *identifier) bool {
 	return false
 }
 
 func (r reservedNumbers) hasNumber(n fieldNumber) bool {
 	for _, m := range r.numbers {
-		if n.intersects(m) {
+		if m != n && n.intersects(m) {
 			return true
 		}
 	}
@@ -118,47 +111,77 @@ func (r reservedNumbers) hasNumber(n fieldNumber) bool {
 }
 
 type reservedLabels struct {
-	labels []identifier
-	parent Definition
+	labels []*label
+	parent declarationContainer
 }
 
-func (r reservedLabels) GetLabels() []string {
-	panic("not implemented")
+func (r reservedLabels) NumLabels() uint {
+	return uint(len(r.labels))
 }
 
-func (r reservedLabels) InsertLabel(index uint, n string) error {
-	panic("not implemented")
+func (r reservedLabels) Label(i uint) declaration {
+	return r.labels[i]
+}
+
+func (r *reservedLabels) InsertLabel(i uint, s string) error {
+	l := &label{
+		parent: r,
+		identifier: &identifier{
+			value:  s,
+			parent: r,
+		},
+	}
+	if err := r.validateLabel(l.identifier); err != nil {
+		return err
+	}
+	r.labels = append(r.labels, nil)
+	copy(r.labels[i+1:], r.labels[i:])
+	r.labels[i] = l
+	return nil
+}
+
+func (r reservedLabels) validateLabel(l *identifier) error {
+	if err := l.validate(); err != nil {
+		return err
+	}
+	for _, f := range r.labels {
+		if f.hasLabel(l) {
+			return fmt.Errorf("label %q already declared", l.String())
+		}
+	}
+	return r.parent.validateLabel(l)
 }
 
 func (r *reservedLabels) InsertIntoParent(i uint) error {
 	switch p := r.parent.(type) {
 	case Enum:
-		if err := r.validateAsEnumField(); err != nil {
-			return err
-		}
-		p.insertField(i, r)
+		return p.insertField(i, r)
 	case Message:
-		if err := r.validateAsMessageField(); err != nil {
-			return err
-		}
-		p.insertField(i, r)
+		return p.insertField(i, r)
 	default:
 		panic(fmt.Sprintf("unhandled reservation parent type %T", p))
+	}
+}
+
+func (r reservedLabels) validateAsEnumField() error {
+	if len(r.labels) < 1 {
+		return errors.New("reserved labels need at least one entry")
+	}
+	for _, l := range r.labels {
+		if err := l.parent.validateLabel(l.identifier); err != nil {
+			return err
+		}
 	}
 	return nil
 }
 
-func (r reservedLabels) validateAsEnumField() error {
-	panic("not implemented")
-}
-
 func (r reservedLabels) validateAsMessageField() error {
-	panic("not implemented")
+	return r.validateAsEnumField()
 }
 
-func (r reservedLabels) hasLabel(l string) bool {
+func (r reservedLabels) hasLabel(l *identifier) bool {
 	for _, s := range r.labels {
-		if s.String() == l {
+		if s.hasLabel(l) {
 			return true
 		}
 	}

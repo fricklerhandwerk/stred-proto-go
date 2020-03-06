@@ -37,7 +37,7 @@ func (m *message) newTypedField(parent interface{}) typedField {
 			parent: m,
 			label: label{
 				parent: m,
-				identifier: identifier{
+				identifier: &identifier{
 					parent: parent,
 				},
 			},
@@ -136,7 +136,7 @@ func (m *message) InsertIntoParent(i uint) (err error) {
 	return m.parent.insertDefinition(i, m)
 }
 
-func (m message) validateLabel(l identifier) error {
+func (m message) validateLabel(l *identifier) error {
 	// TODO: if the policy now develops such that everything is validated by its
 	// parent, this should also be done by a function independent of the
 	// identifier. this makes the whole extra type unnecessary.
@@ -144,7 +144,7 @@ func (m message) validateLabel(l identifier) error {
 		return err
 	}
 	for _, f := range m.fields {
-		if f != l.parent && f.hasLabel(l.String()) {
+		if f.hasLabel(l) {
 			return fmt.Errorf("label %q already declared", l.String())
 		}
 	}
@@ -168,7 +168,7 @@ func (m message) validateNumber(n fieldNumber) error {
 		panic(fmt.Sprintf("unhandled field number type %T", v))
 	}
 	for _, f := range m.fields {
-		if f != n.getParent() && f.hasNumber(n) {
+		if f.hasNumber(n) {
 			return fmt.Errorf("field number %s already in use", n)
 		}
 	}

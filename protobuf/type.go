@@ -33,8 +33,8 @@ func (i *identifier) String() string {
 }
 
 type label struct {
-	identifier
-	parent declarationContainer
+	identifier *identifier
+	parent     declarationContainer
 }
 
 func (d label) GetLabel() string {
@@ -51,8 +51,8 @@ func (d *label) SetLabel(label string) error {
 	return nil
 }
 
-func (d *label) hasLabel(l string) bool {
-	return l == d.GetLabel()
+func (d *label) hasLabel(l *identifier) bool {
+	return l != d.identifier && d.identifier.String() == l.String()
 }
 
 type keyType string

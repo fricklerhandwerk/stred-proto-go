@@ -32,7 +32,7 @@ func (f *field) SetDeprecated(b bool) {
 }
 
 func (f field) hasNumber(n fieldNumber) bool {
-	return n.intersects(f.number)
+	return n != f.number && n.intersects(f.number)
 }
 
 type typedField struct {
@@ -106,7 +106,7 @@ func (o *oneOf) validateAsMessageField() error {
 
 func (o oneOf) hasNumber(n fieldNumber) bool {
 	for _, f := range o.fields {
-		if n.intersects(f.number) {
+		if f.hasNumber(n) {
 			return true
 		}
 	}

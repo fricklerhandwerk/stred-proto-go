@@ -18,7 +18,7 @@ type declaration interface {
 }
 
 type declarationContainer interface {
-	validateLabel(ident identifier) error
+	validateLabel(*identifier) error
 }
 
 type definitionContainer interface {
@@ -42,6 +42,7 @@ type Definition interface {
 	NewReservedLabels() *reservedLabels
 
 	validateAsDefinition() error
+	hasLabel(*identifier) bool
 }
 
 type numberContainer interface {
@@ -65,7 +66,7 @@ type messageField interface {
 	InsertIntoParent(uint) error
 
 	validateAsMessageField() error
-	hasLabel(string) bool
+	hasLabel(*identifier) bool
 	hasNumber(fieldNumber) bool
 }
 
@@ -85,7 +86,7 @@ type Enum interface {
 type enumField interface {
 	InsertIntoParent(uint) error
 	validateAsEnumField() error
-	hasLabel(string) bool
+	hasLabel(*identifier) bool
 	hasNumber(fieldNumber) bool
 }
 

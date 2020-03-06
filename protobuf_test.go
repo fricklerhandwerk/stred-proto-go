@@ -25,13 +25,16 @@ func TestProtocolSetInvalidPackage(t *testing.T) {
 	assert.Nil(t, p.GetPackage())
 }
 
-func TestProtocolDuplicateLabelsForMessageAndService(t *testing.T) {
+func TestProtocolDuplicateLabels(t *testing.T) {
 	p := protobuf.NewDocument()
 	m := p.NewMessage()
 	err := m.SetLabel("foo")
 	require.Nil(t, err)
 	err = m.InsertIntoParent(0)
 	require.Nil(t, err)
+	e := p.NewEnum()
+	err = e.SetLabel("foo")
+	assert.NotNil(t, err)
 	s := p.NewService()
 	err = s.SetLabel("foo")
 	assert.NotNil(t, err)
@@ -364,4 +367,28 @@ func TestInsertIncompleteRange(t *testing.T) {
 	require.Nil(t, err)
 	err = r.InsertIntoParent(0)
 	require.NotNil(t, err)
+}
+
+func TestValidateReservedLabels(t *testing.T) {
+	e := protobuf.NewDocument().NewEnum()
+	rl := e.NewReservedLabels()
+	err := rl.InsertIntoParent(0)
+	require.NotNil(t, err)
+	err = rl.InsertLabel(0, "invalid!")
+	require.NotNil(t, err)
+	err = rl.InsertLabel(0, "someLabel1")
+	require.Nil(t, err)
+	err = rl.Label(0).SetLabel("someLabel")
+	require.Nil(t, err)
+	require.EqualValues(t, 1, rl.NumLabels())
+	err = rl.InsertIntoParent(0)
+	require.Nil(t, err)
+	err = rl.InsertLabel(1, "someLabel")
+	require.NotNil(t, err)
+	err = rl.InsertLabel(1, "someLabel2")
+	require.Nil(t, err)
+	err = rl.Label(1).SetLabel("someLabel")
+	require.NotNil(t, err)
+	err = rl.Label(1).SetLabel("someOtherLabel")
+	require.Nil(t, err)
 }
