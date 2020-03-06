@@ -147,11 +147,11 @@ func (m message) validateNumber(n fieldNumber) error {
 	// TODO: check valid values
 	// https://developers.google.com/protocol-buffers/docs/proto3#assigning-field-numbers
 	switch v := n.(type) {
-	case Number:
+	case *number:
 		if v.GetValue() < 1 {
 			return errors.New("message field number must be >= 1")
 		}
-	case NumberRange:
+	case *numberRange:
 		if v.GetStart() < 1 {
 			return errors.New("message field numbers must be >= 1")
 		}

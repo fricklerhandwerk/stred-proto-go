@@ -56,7 +56,7 @@ func (r *reservedNumbers) validateNumber(n fieldNumber) error {
 		if i != n && i.intersects(n) {
 			var source string
 			switch v := i.(type) {
-			case Number:
+			case *number:
 				source = fmt.Sprintf("field number %d", v)
 			case *numberRange:
 				source = fmt.Sprintf("range %d to %d", v.GetStart(), v.GetEnd())
@@ -77,9 +77,9 @@ func (r *reservedNumbers) InsertIntoParent(i uint) error {
 		return errors.New("reserved numbers need at least one entry")
 	}
 	switch p := r.parent.(type) {
-	case Enum:
+	case *enum:
 		return p.insertField(i, r)
-	case Message:
+	case *message:
 		return p.insertField(i, r)
 	default:
 		panic(fmt.Sprintf("unhandled parent type %T", p))
@@ -148,9 +148,9 @@ func (r reservedLabels) validateLabel(l *label) error {
 
 func (r *reservedLabels) InsertIntoParent(i uint) error {
 	switch p := r.parent.(type) {
-	case Enum:
+	case *enum:
 		return p.insertField(i, r)
-	case Message:
+	case *message:
 		return p.insertField(i, r)
 	default:
 		panic(fmt.Sprintf("unhandled reservation parent type %T", p))

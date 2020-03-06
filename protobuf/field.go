@@ -4,25 +4,20 @@ import "errors"
 
 type field struct {
 	*label
-	number     *number
+	*number
 	deprecated bool
 	parent     Definition
 }
 
-func (f field) GetNumber() uint {
-	return f.number.value
+// TODO: maybe this should be a pointer for easier distinction in UI
+func (f *field) GetNumber() uint {
+	return f.number.GetValue()
 }
 
-func (f *field) SetNumber(n uint) error {
-	// TODO: number should probably be initialised as `nil` so UI can display it as
-	// not set, so check for that here
-	old := f.number.value
-	f.number.value = n
-	if err := f.parent.validateNumber(f.number); err != nil {
-		f.number.value = old
-		return err
-	}
-	return nil
+func (f *field) SetNumber(v uint) error {
+	// TODO: numbers should probably be initialised as `nil` so UI can display it
+	// as not set, so check for that here
+	return f.number.SetValue(v)
 }
 
 func (f field) GetDeprecated() bool {

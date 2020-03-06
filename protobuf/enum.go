@@ -128,9 +128,9 @@ func (e enum) validateNumber(n fieldNumber) error {
 			}
 			var source string
 			switch v := n.(type) {
-			case Number:
+			case *number:
 				source = fmt.Sprintf("field number %d", v.GetValue())
-			case NumberRange:
+			case *numberRange:
 				source = fmt.Sprintf("range %d to %d", v.GetStart(), v.GetEnd())
 			default:
 				panic(fmt.Sprintf("unhandled number type %T", n))

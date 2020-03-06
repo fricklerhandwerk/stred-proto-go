@@ -21,7 +21,6 @@ func (n number) intersects(other fieldNumber) bool {
 	}
 }
 
-// TODO: try `SetNumber()` so we can embed this in fields
 func (n number) GetValue() uint {
 	return n.value
 }
@@ -78,6 +77,7 @@ func (r *numberRange) SetStart(s uint) (err error) {
 	return r.parent.validateNumber(r.start)
 }
 
+// TODO: maybe this should be a pointer for easier distinction in UI
 func (r numberRange) GetEnd() uint {
 	return r.end.value
 }
