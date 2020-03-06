@@ -6,7 +6,7 @@ import (
 )
 
 type message struct {
-	label
+	*label
 	fields      []messageField
 	definitions []Definition
 	parent      definitionContainer
@@ -35,11 +35,8 @@ func (m *message) newTypedField(parent interface{}) typedField {
 	return typedField{
 		field: field{
 			parent: m,
-			label: label{
+			label: &label{
 				parent: m,
-				identifier: &identifier{
-					parent: parent,
-				},
 			},
 			number: &number{
 				parent: m,
@@ -74,7 +71,6 @@ func (m *message) NewOneOf() *oneOf {
 			parent: m,
 		},
 	}
-	out.identifier.parent = out
 	return out
 }
 
@@ -93,22 +89,20 @@ func (m *message) NewReservedLabels() *reservedLabels {
 func (m *message) NewMessage() Message {
 	out := &message{
 		parent: m,
-		label: label{
+		label: &label{
 			parent: m,
 		},
 	}
-	out.identifier.parent = out
 	return out
 }
 
 func (m *message) NewEnum() Enum {
 	out := &enum{
 		parent: m,
-		label: label{
+		label: &label{
 			parent: m,
 		},
 	}
-	out.identifier.parent = out
 	return out
 }
 
@@ -136,7 +130,7 @@ func (m *message) InsertIntoParent(i uint) (err error) {
 	return m.parent.insertDefinition(i, m)
 }
 
-func (m message) validateLabel(l *identifier) error {
+func (m message) validateLabel(l *label) error {
 	// TODO: if the policy now develops such that everything is validated by its
 	// parent, this should also be done by a function independent of the
 	// identifier. this makes the whole extra type unnecessary.
@@ -145,7 +139,7 @@ func (m message) validateLabel(l *identifier) error {
 	}
 	for _, f := range m.fields {
 		if f.hasLabel(l) {
-			return fmt.Errorf("label %q already declared", l.String())
+			return fmt.Errorf("label %q already declared", l.value)
 		}
 	}
 	// TODO: definitions and fields share a namespace
@@ -176,10 +170,7 @@ func (m message) validateNumber(n fieldNumber) error {
 }
 
 func (m *message) validateAsDefinition() (err error) {
-	if err = m.parent.validateLabel(m.label.identifier); err != nil {
-		return
-	}
-	return
+	return m.parent.validateLabel(m.label)
 }
 
 func (m *message) _fieldType() {}

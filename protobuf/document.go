@@ -9,7 +9,7 @@ func NewDocument() Document {
 }
 
 type document struct {
-	_package    *identifier
+	_package    *label
 	imports     []_import
 	services    []*service
 	definitions []Definition
@@ -20,34 +20,34 @@ func (p document) GetPackage() *string {
 	if p._package == nil {
 		return nil
 	}
-	s := p._package.String()
+	s := p._package.value
 	return &s
 }
 
 func (p *document) SetPackage(pkg string) error {
-	ident := &identifier{
+	label := &label{
 		value:  pkg,
 		parent: p,
 	}
-	if err := ident.validate(); err != nil {
+	if err := label.validate(); err != nil {
 		return err
 	}
-	p._package = ident
+	p._package = label
 	return nil
 }
 
-func (p document) validateLabel(l *identifier) error {
+func (p document) validateLabel(l *label) error {
 	if err := l.validate(); err != nil {
 		return err
 	}
 	for _, d := range p.definitions {
 		if d.hasLabel(l) {
-			return fmt.Errorf("label %s already declared for other %T", l.String(), d)
+			return fmt.Errorf("label %s already declared for other %T", l.value, d)
 		}
 	}
 	for _, s := range p.services {
 		if s.hasLabel(l) {
-			return fmt.Errorf("label %s already declared for a service", l.String())
+			return fmt.Errorf("label %s already declared for a service", l.value)
 		}
 	}
 
@@ -77,35 +77,29 @@ func (p *document) insertDefinition(i uint, d Definition) error {
 func (p *document) NewService() Service {
 	out := &service{
 		label: label{
-			parent:     p,
-			identifier: &identifier{},
+			parent: p,
 		},
 	}
-	out.identifier.parent = out
 	return out
 }
 
 func (p *document) NewMessage() Message {
 	out := &message{
 		parent: p,
-		label: label{
-			parent:     p,
-			identifier: &identifier{},
+		label: &label{
+			parent: p,
 		},
 	}
-	out.label.identifier.parent = out
 	return out
 }
 
 func (p *document) NewEnum() Enum {
 	out := &enum{
 		parent: p,
-		label: label{
-			parent:     p,
-			identifier: &identifier{},
+		label: &label{
+			parent: p,
 		},
 	}
-	out.label.identifier.parent = out
 	return out
 }
 

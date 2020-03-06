@@ -7,7 +7,7 @@ import (
 )
 
 type enum struct {
-	label
+	*label
 	allowAlias bool
 	fields     []enumField
 	parent     definitionContainer
@@ -70,16 +70,14 @@ func (e *enum) NewField() *enumeration {
 		parent: e,
 		field: field{
 			parent: e,
-			label: label{
-				parent:     e,
-				identifier: &identifier{},
+			label: &label{
+				parent: e,
 			},
 			number: &number{
 				parent: e,
 			},
 		},
 	}
-	out.identifier.parent = out
 	out.number.integer.parent = out
 	return out
 }
@@ -96,13 +94,13 @@ func (e *enum) NewReservedLabels() *reservedLabels {
 	}
 }
 
-func (e enum) validateLabel(l *identifier) error {
+func (e enum) validateLabel(l *label) error {
 	if err := l.validate(); err != nil {
 		return err
 	}
 	for _, f := range e.fields {
 		if f.hasLabel(l) {
-			return fmt.Errorf("label %s already declared", l.String())
+			return fmt.Errorf("label %s already declared", l.value)
 		}
 	}
 	return nil
@@ -147,7 +145,7 @@ func (e *enum) InsertIntoParent(i uint) (err error) {
 }
 
 func (e *enum) validateAsDefinition() (err error) {
-	return e.parent.validateLabel(e.identifier)
+	return e.parent.validateLabel(e.label)
 }
 
 func (e *enum) _fieldType() {}
@@ -162,7 +160,7 @@ func (e *enumeration) InsertIntoParent(i uint) error {
 }
 
 func (e *enumeration) validateAsEnumField() (err error) {
-	err = e.parent.validateLabel(e.identifier)
+	err = e.parent.validateLabel(e.label)
 	if err != nil {
 		return err
 	}

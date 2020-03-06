@@ -5,17 +5,35 @@ import (
 	"regexp"
 )
 
-// TODO: probably there is no need to have an extra type here, and validation
-// can be done in a function
-type identifier struct {
+type label struct {
 	value  string
-	parent interface{}
+	parent declarationContainer
 }
 
-func (i identifier) validate() error {
+func (l label) GetLabel() string {
+	return l.value
+}
+
+func (l *label) SetLabel(label string) error {
+	old := l.value
+	l.value = label
+	if err := l.parent.validateLabel(l); err != nil {
+		l.value = old
+		return err
+	}
+	return nil
+}
+
+func (l *label) hasLabel(other *label) bool {
+	return l != other && l.value == other.value
+}
+
+// TODO: probably there is no need to have an extra type here, and validation
+// can be done in a function
+func (l label) validate() error {
 	pattern := "[a-zA-Z]([0-9a-zA-Z_])*"
 	regex := regexp.MustCompile(fmt.Sprintf("^%s$", pattern))
-	if !regex.MatchString(i.String()) {
+	if !regex.MatchString(l.value) {
 		// TODO: there are at least two sources of errors which should be
 		// differentiated by type: API caller and user. maybe API usage errors
 		// should even result in a panic, since a nonsensical operation due to
@@ -23,36 +41,6 @@ func (i identifier) validate() error {
 		return fmt.Errorf("Identifier must match %s", pattern)
 	}
 	return nil
-}
-
-func (i *identifier) String() string {
-	if i == nil {
-		return ""
-	}
-	return i.value
-}
-
-type label struct {
-	identifier *identifier
-	parent     declarationContainer
-}
-
-func (d label) GetLabel() string {
-	return d.identifier.String()
-}
-
-func (d *label) SetLabel(label string) error {
-	old := d.identifier.value
-	d.identifier.value = label
-	if err := d.parent.validateLabel(d.identifier); err != nil {
-		d.identifier.value = old
-		return err
-	}
-	return nil
-}
-
-func (d *label) hasLabel(l *identifier) bool {
-	return l != d.identifier && d.identifier.String() == l.String()
 }
 
 type keyType string

@@ -97,7 +97,7 @@ func (r reservedNumbers) validateAsMessageField() error {
 	panic("not implemented")
 }
 
-func (r reservedNumbers) hasLabel(l *identifier) bool {
+func (r reservedNumbers) hasLabel(l *label) bool {
 	return false
 }
 
@@ -126,12 +126,9 @@ func (r reservedLabels) Label(i uint) declaration {
 func (r *reservedLabels) InsertLabel(i uint, s string) error {
 	l := &label{
 		parent: r,
-		identifier: &identifier{
-			value:  s,
-			parent: r,
-		},
+		value:  s,
 	}
-	if err := r.validateLabel(l.identifier); err != nil {
+	if err := r.validateLabel(l); err != nil {
 		return err
 	}
 	r.labels = append(r.labels, nil)
@@ -140,13 +137,13 @@ func (r *reservedLabels) InsertLabel(i uint, s string) error {
 	return nil
 }
 
-func (r reservedLabels) validateLabel(l *identifier) error {
+func (r reservedLabels) validateLabel(l *label) error {
 	if err := l.validate(); err != nil {
 		return err
 	}
 	for _, f := range r.labels {
 		if f.hasLabel(l) {
-			return fmt.Errorf("label %q already declared", l.String())
+			return fmt.Errorf("label %q already declared", l.value)
 		}
 	}
 	return r.parent.validateLabel(l)
@@ -168,7 +165,7 @@ func (r reservedLabels) validateAsEnumField() error {
 		return errors.New("reserved labels need at least one entry")
 	}
 	for _, l := range r.labels {
-		if err := l.parent.validateLabel(l.identifier); err != nil {
+		if err := l.parent.validateLabel(l); err != nil {
 			return err
 		}
 	}
@@ -179,7 +176,7 @@ func (r reservedLabels) validateAsMessageField() error {
 	return r.validateAsEnumField()
 }
 
-func (r reservedLabels) hasLabel(l *identifier) bool {
+func (r reservedLabels) hasLabel(l *label) bool {
 	for _, s := range r.labels {
 		if s.hasLabel(l) {
 			return true

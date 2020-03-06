@@ -3,7 +3,7 @@ package protobuf
 import "errors"
 
 type field struct {
-	label
+	*label
 	number     *number
 	deprecated bool
 	parent     Definition
@@ -68,7 +68,7 @@ func (r *repeatableField) InsertIntoParent(i uint) error {
 }
 
 func (r *repeatableField) validateAsMessageField() (err error) {
-	err = r.parent.validateLabel(r.identifier)
+	err = r.parent.validateLabel(r.label)
 	if err != nil {
 		return err
 	}
@@ -133,7 +133,7 @@ func (m *mapField) InsertIntoParent(i uint) error {
 }
 
 func (m *mapField) validateAsMessageField() error {
-	err := m.parent.validateLabel(m.label.identifier)
+	err := m.parent.validateLabel(m.label)
 	if err != nil {
 		return err
 	}
