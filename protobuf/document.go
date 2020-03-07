@@ -24,16 +24,26 @@ func (p document) GetPackage() *string {
 	return &s
 }
 
-func (p *document) SetPackage(pkg string) error {
-	label := &label{
-		value:  pkg,
-		parent: p,
+func (p *document) SetPackage(pkg string) (err error) {
+	if p._package == nil {
+		p._package = &label{
+			value: pkg,
+		}
+		defer func() {
+			if err != nil {
+				p._package = nil
+			}
+		}()
+	} else {
+		old := p._package.value
+		p._package.value = pkg
+		defer func() {
+			if err != nil {
+				p._package.value = old
+			}
+		}()
 	}
-	if err := label.validate(); err != nil {
-		return err
-	}
-	p._package = label
-	return nil
+	return p._package.validate()
 }
 
 func (p document) validateLabel(l *label) error {

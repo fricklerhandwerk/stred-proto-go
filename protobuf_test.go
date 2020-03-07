@@ -11,11 +11,13 @@ import (
 
 func TestProtocolSetPackage(t *testing.T) {
 	p := protobuf.NewDocument()
-	err := p.SetPackage("package")
+	err := p.SetPackage("invalid!")
+	require.NotNil(t, err)
+	require.Nil(t, p.GetPackage())
+	err = p.SetPackage("package")
 	require.Nil(t, err)
-	pkg := p.GetPackage()
-	require.NotNil(t, pkg)
-	assert.Equal(t, "package", *pkg)
+	require.NotNil(t, p.GetPackage())
+	assert.Equal(t, "package", *p.GetPackage())
 }
 
 func TestProtocolSetInvalidPackage(t *testing.T) {
