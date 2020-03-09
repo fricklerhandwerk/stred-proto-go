@@ -113,7 +113,7 @@ func (m message) Definition(i uint) Definition {
 }
 
 func (m *message) insertDefinition(i uint, d Definition) error {
-	if err := m.validateAsDefinition(); err != nil {
+	if err := d.validateAsDefinition(); err != nil {
 		// TODO: still counting on this becoming a panic instead
 		return err
 	}
