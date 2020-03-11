@@ -138,10 +138,8 @@ func (r reservedLabels) validateLabel(l *label) error {
 	if err := l.validate(); err != nil {
 		return err
 	}
-	for _, f := range r.labels {
-		if f.hasLabel(l) {
-			return fmt.Errorf("label %q already declared", l.value)
-		}
+	if r.hasLabel(l) {
+		return fmt.Errorf("label %q already declared", l.value)
 	}
 	return r.parent.validateLabel(l)
 }
