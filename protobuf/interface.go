@@ -78,7 +78,7 @@ type Enum interface {
 	SetAlias(bool) error
 	Field(uint) enumField
 
-	NewField() *enumeration
+	NewField() *variant
 
 	insertField(uint, enumField) error
 }

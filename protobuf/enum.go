@@ -19,7 +19,7 @@ func (e *enum) SetAlias(b bool) error {
 		numbers := make(map[uint]bool, len(e.fields))
 		for _, field := range e.fields {
 			switch f := field.(type) {
-			case *enumeration:
+			case *variant:
 				n := f.GetNumber()
 				if numbers[n] {
 					lines := []string{
@@ -65,8 +65,8 @@ func (e *enum) insertField(i uint, field enumField) error {
 	return nil
 }
 
-func (e *enum) NewField() *enumeration {
-	out := &enumeration{
+func (e *enum) NewField() *variant {
+	out := &variant{
 		parent: e,
 		field: field{
 			parent: e,
@@ -110,11 +110,11 @@ func (e enum) validateNumber(n fieldNumber) error {
 	for _, f := range e.fields {
 		if f.hasNumber(n) {
 			switch f.(type) {
-			case *enumeration:
+			case *variant:
 				switch n := n.(type) {
 				case *number:
 					switch n.parent.(type) {
-					case *enumeration:
+					case *variant:
 						if e.allowAlias {
 							return nil
 						}
@@ -151,16 +151,16 @@ func (e *enum) validateAsDefinition() (err error) {
 
 func (e *enum) _fieldType() {}
 
-type enumeration struct {
+type variant struct {
 	field
 	parent *enum
 }
 
-func (e *enumeration) InsertIntoParent(i uint) error {
+func (e *variant) InsertIntoParent(i uint) error {
 	return e.parent.insertField(i, e)
 }
 
-func (e *enumeration) validateAsEnumField() (err error) {
+func (e *variant) validateAsEnumField() (err error) {
 	err = e.parent.validateLabel(e.label)
 	if err != nil {
 		return err
@@ -174,6 +174,6 @@ func (e *enumeration) validateAsEnumField() (err error) {
 
 // this is a hack to be able to trace the parent of
 // a number, so we can validate enum aliasing
-func (e enumeration) validateNumber(n fieldNumber) error {
+func (e variant) validateNumber(n fieldNumber) error {
 	return e.parent.validateNumber(n)
 }
