@@ -9,6 +9,24 @@ func NewDocument() Document {
 }
 
 type document struct {
+	// TODO: there is no fixed order in the syntax, so separating it this way is
+	// an artificial constraint for the textual representation. we have the
+	// following options:
+	//
+	// 1. just have one field `[]documentItem` and let the appropriate types
+	//    implement `documentItem`.
+	// 2. keep the field layout as is, but somehow keep track of the position of
+	//    each item in the document.
+	//
+	// in any case we need to rework semantics of `InsertIntoParent(index uint)
+	// error` to insert an object not at a position within a list of that type,
+	// but within the whole parent. also the validation would look slightly
+	// different, requiring a `validateAsDocumentItem()` method on `documentItem`
+	// and maybe some specialised (private?) accessors on `Document`. the same
+	// would apply for `Message` for example.
+	// there should also be a way to move items around, since actually deleting
+	// and re-inserting them is not generally possible, because references would
+	// break.
 	_package    *label
 	imports     []_import
 	services    []*service
