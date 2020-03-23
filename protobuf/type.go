@@ -5,16 +5,35 @@ import (
 	"regexp"
 )
 
+type declarationContainer interface {
+	validateLabel(*label) error
+}
+
 type label struct {
 	value  string
 	parent declarationContainer
 }
 
-func (l label) GetLabel() string {
+func (l label) Value() string {
 	return l.value
 }
 
-func (l *label) SetLabel(label string) error {
+func (l label) Label() string {
+	return l.value
+}
+
+func (l *label) maybeLabel() *string {
+	if l == nil {
+		return nil
+	}
+	value := l.value
+	return &value
+}
+
+func (l *label) SetValue(label string) error {
+	if err := validateIdentifier(label); err != nil {
+		return err
+	}
 	old := l.value
 	l.value = label
 	if err := l.parent.validateLabel(l); err != nil {
@@ -24,23 +43,21 @@ func (l *label) SetLabel(label string) error {
 	return nil
 }
 
-func (l *label) hasLabel(other *label) bool {
-	return l != other && l.value == other.value
+func (l *label) SetLabel(label string) error {
+	return l.SetValue(label)
 }
 
-// TODO: probably there is no need to have an extra type here, and validation
-// can be done in a function
-func (l label) validate() error {
+func validateIdentifier(value string) (err error) {
 	pattern := "[a-zA-Z]([0-9a-zA-Z_])*"
 	regex := regexp.MustCompile(fmt.Sprintf("^%s$", pattern))
-	if !regex.MatchString(l.value) {
-		// TODO: there are at least two sources of errors which should be
-		// differentiated by type: API caller and user. maybe API usage errors
-		// should even result in a panic, since a nonsensical operation due to
-		// broken implementation simply must not be allowed.
-		return fmt.Errorf("Identifier must match %s", pattern)
+	if !regex.MatchString(value) {
+		err = fmt.Errorf("Identifier must match %s", pattern)
 	}
-	return nil
+	return
+}
+
+func (l *label) hasLabel(other *label) bool {
+	return l != other && l.value == other.value
 }
 
 type keyType string
@@ -60,7 +77,8 @@ const (
 	String   keyType = "string"
 )
 
-func (k keyType) _fieldType() {}
+func (k keyType) _isFieldType() {}
+func (k keyType) _isKeyType()   {}
 
 type valueType string
 
@@ -70,4 +88,4 @@ const (
 	Bytes  valueType = "bytes"
 )
 
-func (v valueType) _fieldType() {}
+func (v valueType) _isFieldType() {}

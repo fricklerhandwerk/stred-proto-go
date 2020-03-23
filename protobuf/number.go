@@ -5,12 +5,16 @@ import (
 	"fmt"
 )
 
+type numberContainer interface {
+	validateNumber(FieldNumber) error
+}
+
 type number struct {
 	value  uint
 	parent numberContainer
 }
 
-func (n number) intersects(other fieldNumber) bool {
+func (n number) intersects(other FieldNumber) bool {
 	switch o := other.(type) {
 	case *number:
 		return n.value == o.value
@@ -21,8 +25,24 @@ func (n number) intersects(other fieldNumber) bool {
 	}
 }
 
-func (n number) GetValue() uint {
+func (n number) Value() uint {
 	return n.value
+}
+
+func (n number) Number() uint {
+	return n.value
+}
+
+func (n *number) maybeValue() *uint {
+	if n == nil {
+		return nil
+	}
+	value := n.value
+	return &value
+}
+
+func (n *number) maybeNumber() *uint {
+	return n.maybeValue()
 }
 
 func (n *number) SetValue(v uint) error {
@@ -35,90 +55,115 @@ func (n *number) SetValue(v uint) error {
 	return nil
 }
 
+func (n *number) SetNumber(v uint) error {
+	return n.SetValue(v)
+}
+
+type newNumberRange struct {
+	numberRange *numberRange
+}
+
+func (r newNumberRange) MaybeStart() *uint {
+	return r.numberRange.start.maybeValue()
+}
+
+func (r *newNumberRange) SetStart(s uint) (err error) {
+	if r.numberRange.start == nil {
+		r.numberRange.start = &number{
+			parent: r.numberRange.parent,
+		}
+		defer func() {
+			if err != nil {
+				r.numberRange.start = nil
+			}
+		}()
+	}
+
+	if r.numberRange.end != nil {
+		return r.numberRange.SetStart(s)
+	}
+	return r.numberRange.start.SetValue(s)
+}
+
+func (r newNumberRange) MaybeEnd() *uint {
+	return r.numberRange.end.maybeValue()
+}
+
+func (r *newNumberRange) SetEnd(s uint) (err error) {
+	if r.numberRange.end == nil {
+		r.numberRange.end = &number{
+			parent: r.numberRange.parent,
+		}
+		defer func() {
+			if err != nil {
+				r.numberRange.end = nil
+			}
+		}()
+	}
+
+	if r.numberRange.start != nil {
+		return r.numberRange.SetEnd(s)
+	}
+	return r.numberRange.end.SetValue(s)
+}
+
+func (r *newNumberRange) InsertIntoParent(i uint) error {
+	if err := r.numberRange.parent.insertNumber(i, r.numberRange); err != nil {
+		return err
+	}
+	r.numberRange = &numberRange{
+		parent: r.numberRange.parent,
+	}
+	return nil
+}
+
 type numberRange struct {
 	start  *number
 	end    *number
 	parent *reservedNumbers
 }
 
-// TODO: maybe this should be a pointer for easier distinction in UI
-func (r numberRange) GetStart() uint {
+func (r numberRange) Start() uint {
 	return r.start.value
 }
 
 func (r *numberRange) SetStart(s uint) (err error) {
-	if r.start != nil {
-		old := r.start.value
-		r.start.value = s
+	old := r.start.value
+	r.start.value = s
 
-		defer func() {
-			if err != nil {
-				r.start.value = old
-			}
-		}()
-	} else {
-		r.start = &number{
-			parent: r.parent,
-			value:  s,
+	defer func() {
+		if err != nil {
+			r.start.value = old
 		}
-		defer func() {
-			if err != nil {
-				r.start = nil
-			}
-		}()
-	}
+	}()
 
-	if r.end != nil {
-		if s >= r.end.value {
-			return errors.New("end of number range must be greater than start")
-		}
-		return r.parent.validateNumber(r)
+	if s >= r.end.value {
+		return errors.New("end of number range must be greater than start")
 	}
-	return r.parent.validateNumber(r.start)
+	return r.parent.validateNumber(r)
 }
 
-// TODO: maybe this should be a pointer for easier distinction in UI
-func (r numberRange) GetEnd() uint {
+func (r numberRange) End() uint {
 	return r.end.value
 }
 
 func (r *numberRange) SetEnd(e uint) (err error) {
-	if r.end != nil {
-		old := r.end.value
-		r.end.value = e
+	old := r.end.value
+	r.end.value = e
 
-		defer func() {
-			if err != nil {
-				r.end.value = old
-			}
-		}()
-	} else {
-		r.end = &number{
-			value:  e,
-			parent: r.parent,
+	defer func() {
+		if err != nil {
+			r.end.value = old
 		}
-		defer func() {
-			if err != nil {
-				r.end = nil
-			}
-		}()
-	}
+	}()
 
-	if r.start != nil {
-		if r.start.value >= e {
-			return errors.New("end of number range must be greater than start")
-		}
-		return r.parent.validateNumber(r)
+	if r.start.value >= e {
+		return errors.New("end of number range must be greater than start")
 	}
-
-	return r.parent.validateNumber(r.end)
+	return r.parent.validateNumber(r)
 }
 
-func (r *numberRange) InsertIntoParent(i uint) error {
-	return r.parent.insertNumber(i, r)
-}
-
-func (r *numberRange) intersects(other fieldNumber) bool {
+func (r *numberRange) intersects(other FieldNumber) bool {
 	switch o := other.(type) {
 	case *number:
 		return o.intersects(r)

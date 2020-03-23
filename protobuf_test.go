@@ -13,18 +13,18 @@ func TestProtocolSetPackage(t *testing.T) {
 	p := protobuf.NewDocument()
 	err := p.SetPackage("invalid!")
 	require.NotNil(t, err)
-	require.Nil(t, p.GetPackage())
+	require.Nil(t, p.MaybePackage())
 	err = p.SetPackage("package")
 	require.Nil(t, err)
-	require.NotNil(t, p.GetPackage())
-	assert.Equal(t, "package", *p.GetPackage())
+	require.NotNil(t, p.MaybePackage())
+	assert.Equal(t, "package", *p.MaybePackage())
 }
 
 func TestProtocolSetInvalidPackage(t *testing.T) {
 	p := protobuf.NewDocument()
 	err := p.SetPackage("package!")
 	require.NotNil(t, err)
-	assert.Nil(t, p.GetPackage())
+	assert.Nil(t, p.MaybePackage())
 }
 
 func TestProtocolDuplicateLabels(t *testing.T) {
@@ -47,7 +47,7 @@ func TestMessageSetLabel(t *testing.T) {
 	m := p.NewMessage()
 	err := m.SetLabel("message")
 	require.Nil(t, err)
-	assert.Equal(t, "message", m.GetLabel())
+	assert.Equal(t, "message", *m.MaybeLabel())
 }
 
 func TestMessageSetInvalidPackage(t *testing.T) {
@@ -56,7 +56,7 @@ func TestMessageSetInvalidPackage(t *testing.T) {
 
 	err := m.SetLabel("message!")
 	require.NotNil(t, err)
-	assert.Empty(t, m.GetLabel())
+	assert.Nil(t, m.MaybeLabel())
 }
 
 func TestTypedFieldSetProperties(t *testing.T) {
@@ -65,20 +65,20 @@ func TestTypedFieldSetProperties(t *testing.T) {
 
 	err := f.SetLabel("typedField")
 	require.Nil(t, err)
-	assert.Equal(t, "typedField", f.GetLabel())
+	assert.Equal(t, "typedField", *f.MaybeLabel())
 
 	err = f.SetNumber(1)
 	require.Nil(t, err)
-	assert.EqualValues(t, 1, f.GetNumber())
+	assert.EqualValues(t, 1, *f.MaybeNumber())
 
 	f.SetDeprecated(true)
-	assert.Equal(t, true, f.GetDeprecated())
+	assert.Equal(t, true, f.Deprecated())
 
 	f.SetType(protobuf.Int32)
-	assert.Equal(t, protobuf.Int32, f.GetType())
+	assert.Equal(t, protobuf.Int32, f.MaybeType())
 
 	f.SetType(protobuf.Bytes)
-	assert.Equal(t, protobuf.Bytes, f.GetType())
+	assert.Equal(t, protobuf.Bytes, f.MaybeType())
 }
 
 func TestMessageAddField(t *testing.T) {
@@ -101,7 +101,7 @@ func TestMessageAddField(t *testing.T) {
 func TestEnumAddField(t *testing.T) {
 	e := protobuf.NewDocument().NewEnum()
 
-	f := e.NewField()
+	f := e.NewVariant()
 	err := f.SetLabel("enumValue")
 	require.Nil(t, err)
 	err = f.SetNumber(1)
@@ -115,7 +115,7 @@ func TestEnumAddField(t *testing.T) {
 func TestEnumerationSetInvalidProperties(t *testing.T) {
 	e := protobuf.NewDocument().NewEnum()
 
-	f1 := e.NewField()
+	f1 := e.NewVariant()
 	err := f1.SetLabel("enumValue1")
 	require.Nil(t, err)
 	err = f1.SetNumber(1)
@@ -126,7 +126,7 @@ func TestEnumerationSetInvalidProperties(t *testing.T) {
 	require.Nil(t, err)
 
 	// duplicate label
-	f2 := e.NewField()
+	f2 := e.NewVariant()
 	err = f2.SetLabel("enumValue1")
 	require.NotNil(t, err)
 	err = f2.SetLabel("enumValue2")
@@ -139,7 +139,7 @@ func TestEnumerationSetInvalidProperties(t *testing.T) {
 	require.Nil(t, err)
 
 	// duplicate field number with "allow_alias = true"
-	err = e.SetAlias(true)
+	err = e.SetAllowAlias(true)
 	require.Nil(t, err)
 
 	// try to disable aliasing with duplicate field numbers
@@ -147,7 +147,7 @@ func TestEnumerationSetInvalidProperties(t *testing.T) {
 	require.Nil(t, err)
 	err = f2.InsertIntoParent(1)
 	require.Nil(t, err)
-	err = e.SetAlias(false)
+	err = e.SetAllowAlias(false)
 	require.NotNil(t, err)
 }
 
@@ -181,22 +181,28 @@ func TestTypedFieldSetInvalidProperties(t *testing.T) {
 
 func TestEnumAddInvalidField(t *testing.T) {
 	e := protobuf.NewDocument().NewEnum()
-	f1 := e.NewField()
+	f1 := e.NewVariant()
 
 	// label not set
-	err := f1.InsertIntoParent(0)
+	err := f1.SetNumber(0)
+	require.Nil(t, err)
+	err = f1.InsertIntoParent(0)
+	require.NotNil(t, err)
+
+	// number not set
+	f2 := e.NewVariant()
+	err = f2.SetLabel("someLabel")
+	require.Nil(t, err)
+	err = f2.InsertIntoParent(0)
 	require.NotNil(t, err)
 
 	// duplicate field number not checked
-	err = f1.SetLabel("someLabel")
+	err = f1.SetLabel("anotherLabel")
 	require.Nil(t, err)
 	err = f1.InsertIntoParent(0)
 	require.Nil(t, err)
 
-	f2 := e.NewField()
-	err = f2.SetLabel("anotherLabel")
-	require.Nil(t, err)
-	err = f2.InsertIntoParent(1)
+	err = f2.SetNumber(0)
 	require.NotNil(t, err)
 }
 
@@ -227,7 +233,7 @@ func TestMessageValidateReservedNumber(t *testing.T) {
 	require.Nil(t, err)
 	require.EqualValues(t, 1, r.NumNumbers())
 
-	nr := r.NewRange()
+	nr := r.NewNumberRange()
 	err = nr.SetStart(0)
 	require.NotNil(t, err)
 	err = nr.SetStart(1)
@@ -236,14 +242,14 @@ func TestMessageValidateReservedNumber(t *testing.T) {
 	require.Nil(t, err)
 	err = nr.SetEnd(10)
 	require.Nil(t, err)
-	require.EqualValues(t, 2, nr.GetStart())
-	require.EqualValues(t, 10, nr.GetEnd())
+	require.EqualValues(t, 2, *nr.MaybeStart())
+	require.EqualValues(t, 10, *nr.MaybeEnd())
 	err = nr.InsertIntoParent(1)
 	require.Nil(t, err)
 
-	nr2 := r.NewRange()
+	nr2 := r.NewNumberRange()
 	err = nr2.SetStart(11)
-	require.EqualValues(t, 11, nr2.GetStart())
+	require.EqualValues(t, 11, *nr2.MaybeStart())
 	require.Nil(t, err)
 	err = nr2.SetEnd(20)
 	require.Nil(t, err)
@@ -271,7 +277,7 @@ func TestEnumValidateReservedNumber(t *testing.T) {
 	require.Nil(t, err)
 	require.EqualValues(t, 1, r.NumNumbers())
 
-	nr := r.NewRange()
+	nr := r.NewNumberRange()
 	err = nr.SetStart(0)
 	require.NotNil(t, err)
 	err = nr.SetStart(1)
@@ -280,7 +286,7 @@ func TestEnumValidateReservedNumber(t *testing.T) {
 	require.Nil(t, err)
 	err = nr.InsertIntoParent(1)
 
-	nr2 := r.NewRange()
+	nr2 := r.NewNumberRange()
 	err = nr2.SetStart(11)
 	require.Nil(t, err)
 	err = nr2.SetEnd(20)
@@ -305,9 +311,15 @@ func TestEnumValidateReservedNumber(t *testing.T) {
 func TestMessageValidateDefinition(t *testing.T) {
 	p := protobuf.NewDocument()
 
-	m := p.NewMessage()
-	err := m.SetLabel("myMessage")
+	nm := p.NewMessage()
+	err := nm.SetLabel("myMessage")
 	require.Nil(t, err)
+
+	// we cannot choose a field type from tentative definitions, so insert the
+	// message first
+	err = nm.InsertIntoParent(0)
+	require.Nil(t, err)
+	m := p.Definition(0).(protobuf.Message)
 
 	f1 := m.NewField()
 	err = f1.SetLabel("myField")
@@ -328,9 +340,6 @@ func TestMessageValidateDefinition(t *testing.T) {
 	err = f2.InsertIntoParent(1)
 	require.Nil(t, err)
 	require.EqualValues(t, 2, m.NumFields())
-
-	err = m.InsertIntoParent(0)
-	require.Nil(t, err)
 }
 
 func TestEnumValidateDefinition(t *testing.T) {
@@ -340,7 +349,7 @@ func TestEnumValidateDefinition(t *testing.T) {
 	err := e.SetLabel("myEnum")
 	require.Nil(t, err)
 
-	f1 := e.NewField()
+	f1 := e.NewVariant()
 	err = f1.SetLabel("myField")
 	require.Nil(t, err)
 	err = f1.SetNumber(0)
@@ -349,7 +358,7 @@ func TestEnumValidateDefinition(t *testing.T) {
 	require.Nil(t, err)
 	require.EqualValues(t, 1, e.NumFields())
 
-	f2 := e.NewField()
+	f2 := e.NewVariant()
 	err = f2.SetLabel("myNewField")
 	require.Nil(t, err)
 	err = f2.SetNumber(1)
@@ -364,7 +373,7 @@ func TestEnumValidateDefinition(t *testing.T) {
 
 func TestInsertIncompleteRange(t *testing.T) {
 	rn := protobuf.NewDocument().NewEnum().NewReservedNumbers()
-	r := rn.NewRange()
+	r := rn.NewNumberRange()
 	err := r.SetStart(1)
 	require.Nil(t, err)
 	err = r.InsertIntoParent(0)
@@ -380,7 +389,7 @@ func TestValidateReservedLabels(t *testing.T) {
 	require.NotNil(t, err)
 	err = rl.InsertLabel(0, "someLabel1")
 	require.Nil(t, err)
-	err = rl.Label(0).SetLabel("someLabel")
+	err = rl.Label(0).SetValue("someLabel")
 	require.Nil(t, err)
 	require.EqualValues(t, 1, rl.NumLabels())
 	err = rl.InsertIntoParent(0)
@@ -389,8 +398,8 @@ func TestValidateReservedLabels(t *testing.T) {
 	require.NotNil(t, err)
 	err = rl.InsertLabel(1, "someLabel2")
 	require.Nil(t, err)
-	err = rl.Label(1).SetLabel("someLabel")
+	err = rl.Label(1).SetValue("someLabel")
 	require.NotNil(t, err)
-	err = rl.Label(1).SetLabel("someOtherLabel")
+	err = rl.Label(1).SetValue("someOtherLabel")
 	require.Nil(t, err)
 }

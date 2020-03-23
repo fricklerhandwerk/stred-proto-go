@@ -38,16 +38,19 @@ package protobuf
 // defined below. their name is prefixed with `New`, and for each we can set
 // attributes, add children (which are likewise preliminary at creation), and
 // insert the object into the parent it was created by, at a specified index in
-// the parent's collection. insertion means deep-copy, and a tentative
-// structure can be reused thereafter without side-effects - but it is
-// recommended to fetch the same object back from its parent to have a more
-// convenient interface. on the tentative variants, attribute accessors have
-// names prefixed with `Maybe` and return pointers, signifying that a value may
-// not have been set yet. if not `nil`, pointers point to a copy of the
-// original value, as all mutation must go through the appropriate interface.
-// where interfaces are returned, consumers must check for `nil`. objects
-// retrieved from a parent will always return values or non-nil interfaces, as
-// they have been validated prior.
+// the parent's collection. insertion means emptying and thus invalidating the
+// tentative object. this is mostly for implemenation simplicity; we could also
+// deep-copy the new structure into its parent to have side-effect free
+// handling of the new object, but this is much additional work without much
+// value for now. to continue operating on the object you have to fetch it
+// back from its parent, which will give you a more convenient interface.
+// on the tentative variants, attribute accessors have names prefixed with
+// `Maybe` and return pointers, signifying that a value may not have been set
+// yet. if not `nil`, pointers point to a copy of the original value, as all
+// mutation must go through the appropriate interface.  where interfaces are
+// returned, consumers must check for `nil`. objects retrieved from a parent
+// will always return values or non-nil interfaces, as they have necessarily
+// been validated prior.
 
 type Document interface {
 	MaybePackage() *string
@@ -64,9 +67,9 @@ type Document interface {
 	NewMessage() NewMessage
 	NewEnum() NewEnum
 
-	validateLabel(Label) error
+	validateLabel(*label) error
 
-	insertService(index uint, service Service) error
+	insertService(index uint, service *service) error
 	insertDefinition(index uint, definition Definition) error
 }
 
@@ -80,9 +83,6 @@ type NewService interface {
 	NewRPC() NewRPC
 
 	InsertIntoParent(index uint) error
-
-	validateLabel(Label) error
-	insertRPC(index uint, rpc RPC) error
 }
 
 type Service interface {
@@ -94,10 +94,10 @@ type Service interface {
 
 	NewRPC() NewRPC
 
-	validateLabel(Label) error
-	insertRPC(index uint, rpc RPC) error
+	validateLabel(*label) error
+	insertRPC(index uint, rpc *rpc) error
 
-	hasLabel(Label) bool
+	hasLabel(*label) bool
 	validateAsService() error
 }
 
@@ -133,7 +133,7 @@ type RPC interface {
 	SetStreamResponse(bool) error
 
 	validateAsRPC() error
-	hasLabel(Label) bool
+	hasLabel(*label) bool
 }
 
 type Definition interface {
@@ -145,10 +145,10 @@ type Definition interface {
 	NewReservedLabels() NewReservedLabels
 
 	validateNumber(FieldNumber) error
-	validateLabel(Label) error
+	validateLabel(*label) error
 
 	validateAsDefinition() error
-	hasLabel(Label) bool
+	hasLabel(*label) bool
 }
 
 type NewMessage interface {
@@ -171,12 +171,6 @@ type NewMessage interface {
 	NewEnum() NewEnum
 
 	InsertIntoParent(index uint) error
-
-	validateNumber(FieldNumber) error
-	validateLabel(Label) error
-
-	insertField(index uint, field MessageField) error
-	insertDefinition(index uint, definition Definition) error
 }
 
 type Message interface {
@@ -199,13 +193,13 @@ type Message interface {
 	NewEnum() NewEnum
 
 	validateNumber(FieldNumber) error
-	validateLabel(Label) error
+	validateLabel(*label) error
 
 	insertField(uint, MessageField) error
 	insertDefinition(index uint, def Definition) error
 
 	validateAsDefinition() error
-	hasLabel(Label) bool
+	hasLabel(*label) bool
 
 	FieldType
 }
@@ -246,7 +240,7 @@ type Field interface {
 	SetDeprecated(bool) error
 
 	validateAsMessageField() error
-	hasLabel(Label) bool
+	hasLabel(*label) bool
 	hasNumber(FieldNumber) bool
 }
 
@@ -276,8 +270,8 @@ type Map interface {
 	Number() uint
 	SetNumber(uint) error
 
-	KeyType() keyType
-	SetKeyType(keyType) error
+	KeyType() KeyType
+	SetKeyType(KeyType) error
 
 	ValueType() FieldType
 	SetValueType(FieldType) error
@@ -286,7 +280,7 @@ type Map interface {
 	SetDeprecated(bool) error
 
 	validateAsMessageField() error
-	hasLabel(Label) bool
+	hasLabel(*label) bool
 	hasNumber(FieldNumber) bool
 }
 
@@ -299,10 +293,6 @@ type NewOneOf interface {
 
 	NewField() NewOneOfField
 
-	validateLabel(Label) error
-	validateNumber(Number) error
-	insertField(index uint, field OneOfField) error
-
 	InsertIntoParent(index uint) error
 }
 
@@ -312,12 +302,12 @@ type OneOf interface {
 
 	NewField() NewOneOfField
 
-	validateLabel(Label) error
+	validateLabel(*label) error
 	validateNumber(Number) error
 	insertField(index uint, field OneOfField) error
 
 	validateAsMessageField() error
-	hasLabel(Label) bool
+	hasLabel(*label) bool
 	hasNumber(FieldNumber) bool
 }
 
@@ -351,7 +341,7 @@ type OneOfField interface {
 	SetDeprecated(bool) error
 
 	validateAsOneOfField() error
-	hasLabel(Label) bool
+	hasLabel(*label) bool
 	hasNumber(FieldNumber) bool
 }
 
@@ -363,9 +353,6 @@ type NewReservedNumbers interface {
 	NewNumberRange() NewNumberRange
 
 	InsertIntoParent(index uint) error
-
-	validateNumber(FieldNumber) error
-	insertNumber(index uint, number FieldNumber) error
 }
 
 type ReservedNumbers interface {
@@ -380,7 +367,7 @@ type ReservedNumbers interface {
 
 	validateAsMessageField() error
 	validateAsEnumField() error
-	hasLabel(Label) bool
+	hasLabel(*label) bool
 	hasNumber(FieldNumber) bool
 }
 
@@ -389,8 +376,6 @@ type NewReservedLabels interface {
 	Label(index uint) Label
 
 	InsertLabel(index uint, label string) error
-
-	validateLabel(Label) error
 
 	InsertIntoParent(index uint) error
 }
@@ -401,17 +386,17 @@ type ReservedLabels interface {
 
 	InsertLabel(index uint, label string) error
 
-	validateLabel(Label) error
+	validateLabel(*label) error
 
 	validateAsMessageField() error
 	validateAsEnumField() error
-	hasLabel(Label) bool
+	hasLabel(*label) bool
 	hasNumber(FieldNumber) bool
 }
 
 type MessageField interface {
 	validateAsMessageField() error
-	hasLabel(Label) bool
+	hasLabel(*label) bool
 	hasNumber(FieldNumber) bool
 }
 
@@ -430,10 +415,6 @@ type NewEnum interface {
 	NewReservedLabels() NewReservedLabels
 
 	InsertIntoParent(index uint) error
-
-	validateLabel(Label) error
-	validateNumber(FieldNumber) error
-	insertField(uint, EnumField) error
 }
 
 type Enum interface {
@@ -450,19 +431,19 @@ type Enum interface {
 	NewReservedNumbers() NewReservedNumbers
 	NewReservedLabels() NewReservedLabels
 
-	validateLabel(Label) error
+	validateLabel(*label) error
 	validateNumber(FieldNumber) error
 	insertField(uint, EnumField) error
 
 	validateAsDefinition() error
-	hasLabel(Label) bool
+	hasLabel(*label) bool
 
 	FieldType
 }
 
 type EnumField interface {
 	validateAsEnumField() error
-	hasLabel(Label) bool
+	hasLabel(*label) bool
 	hasNumber(FieldNumber) bool
 }
 
@@ -491,7 +472,7 @@ type Variant interface {
 
 	validateAsEnumField() error
 	hasNumber(FieldNumber) bool
-	hasLabel(Label) bool
+	hasLabel(*label) bool
 }
 
 type Label interface {

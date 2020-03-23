@@ -33,47 +33,28 @@ type document struct {
 	definitions []Definition
 }
 
-func (p document) GetPackage() *string {
-	// TODO: this mess is just another argument to just store the identifier as a string (pointer)
-	if p._package == nil {
-		return nil
-	}
-	s := p._package.value
-	return &s
+func (d document) MaybePackage() *string {
+	return d._package.maybeLabel()
 }
 
-func (p *document) SetPackage(pkg string) (err error) {
-	if p._package == nil {
-		p._package = &label{
-			value: pkg,
-		}
-		defer func() {
-			if err != nil {
-				p._package = nil
-			}
-		}()
-	} else {
-		old := p._package.value
-		p._package.value = pkg
-		defer func() {
-			if err != nil {
-				p._package.value = old
-			}
-		}()
-	}
-	return p._package.validate()
-}
-
-func (p document) validateLabel(l *label) error {
-	if err := l.validate(); err != nil {
+func (d *document) SetPackage(pkg string) (err error) {
+	if err := validateIdentifier(pkg); err != nil {
 		return err
 	}
-	for _, d := range p.definitions {
-		if d.hasLabel(l) {
-			return fmt.Errorf("label %s already declared for other %T", l.value, d)
+	if d._package == nil {
+		d._package = &label{}
+	}
+	d._package.value = pkg
+	return nil
+}
+
+func (d document) validateLabel(l *label) error {
+	for _, def := range d.definitions {
+		if def.hasLabel(l) {
+			return fmt.Errorf("label %s already declared for other %T", l.value, def)
 		}
 	}
-	for _, s := range p.services {
+	for _, s := range d.services {
 		if s.hasLabel(l) {
 			return fmt.Errorf("label %s already declared for a service", l.value)
 		}
@@ -82,53 +63,63 @@ func (p document) validateLabel(l *label) error {
 	return nil
 }
 
-// TODO: use a common implementation for definition containers
-func (p document) NumDefinitions() uint {
-	return uint(len(p.definitions))
+func (d document) NumServices() uint {
+	return uint(len(d.services))
 }
 
-func (p document) Definition(i uint) Definition {
-	return p.definitions[i]
+func (d document) Service(i uint) Service {
+	return d.services[i]
 }
 
-func (p *document) insertDefinition(i uint, d Definition) error {
-	if err := d.validateAsDefinition(); err != nil {
+func (d *document) insertService(i uint, s *service) error {
+	if err := s.validateAsService(); err != nil {
 		// TODO: still counting on this becoming a panic instead
 		return err
 	}
-	p.definitions = append(p.definitions, nil)
-	copy(p.definitions[i+1:], p.definitions[i:])
-	p.definitions[i] = d
+	d.services = append(d.services, nil)
+	copy(d.services[i+1:], d.services[i:])
+	d.services[i] = s
 	return nil
 }
 
-func (p *document) NewService() Service {
-	out := &service{
-		label: label{
-			parent: p,
-		},
-	}
-	return out
+// TODO: use a common implementation for definition containers
+func (d document) NumDefinitions() uint {
+	return uint(len(d.definitions))
 }
 
-func (p *document) NewMessage() Message {
-	out := &message{
-		parent: p,
-		label: &label{
-			parent: p,
-		},
-	}
-	return out
+func (d document) Definition(i uint) Definition {
+	return d.definitions[i]
 }
 
-func (p *document) NewEnum() Enum {
-	out := &enum{
-		parent: p,
-		label: &label{
-			parent: p,
+func (d *document) insertDefinition(i uint, def Definition) error {
+	if err := def.validateAsDefinition(); err != nil {
+		// TODO: still counting on this becoming a panic instead
+		return err
+	}
+	d.definitions = append(d.definitions, nil)
+	copy(d.definitions[i+1:], d.definitions[i:])
+	d.definitions[i] = def
+	return nil
+}
+
+func (d *document) NewService() NewService {
+	return &newService{
+		service: &service{
+			parent: d,
 		},
 	}
-	return out
+}
+
+func (d *document) NewMessage() NewMessage {
+	return &newMessage{
+		message: &message{parent: d},
+	}
+}
+
+func (d *document) NewEnum() NewEnum {
+	return &newEnum{
+		enum: &enum{parent: d},
+	}
 }
 
 type _import struct {
