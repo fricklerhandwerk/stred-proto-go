@@ -34,6 +34,7 @@ func TestProtocolDuplicateLabels(t *testing.T) {
 	require.Nil(t, err)
 	err = m.InsertIntoParent(0)
 	require.Nil(t, err)
+
 	e := p.NewEnum()
 	err = e.SetLabel("foo")
 	assert.NotNil(t, err)
@@ -225,8 +226,8 @@ func TestMessageInsertInvalidField(t *testing.T) {
 }
 
 func TestMessageValidateReservedNumber(t *testing.T) {
-	m := protobuf.NewDocument().NewMessage()
-	r := m.NewReservedNumbers()
+	r := protobuf.NewDocument().NewMessage().NewReservedNumbers()
+
 	err := r.InsertNumber(0, 0)
 	require.NotNil(t, err)
 	err = r.InsertNumber(0, 1)
@@ -271,8 +272,8 @@ func TestMessageValidateReservedNumber(t *testing.T) {
 }
 
 func TestEnumValidateReservedNumber(t *testing.T) {
-	e := protobuf.NewDocument().NewEnum()
-	r := e.NewReservedNumbers()
+	r := protobuf.NewDocument().NewEnum().NewReservedNumbers()
+
 	err := r.InsertNumber(0, 0)
 	require.Nil(t, err)
 	require.EqualValues(t, 1, r.NumNumbers())
@@ -343,9 +344,8 @@ func TestMessageValidateDefinition(t *testing.T) {
 }
 
 func TestEnumValidateDefinition(t *testing.T) {
-	p := protobuf.NewDocument()
+	e := protobuf.NewDocument().NewEnum()
 
-	e := p.NewEnum()
 	err := e.SetLabel("myEnum")
 	require.Nil(t, err)
 
@@ -372,17 +372,21 @@ func TestEnumValidateDefinition(t *testing.T) {
 }
 
 func TestInsertIncompleteRange(t *testing.T) {
-	rn := protobuf.NewDocument().NewEnum().NewReservedNumbers()
-	r := rn.NewNumberRange()
+	r := protobuf.NewDocument().NewEnum().NewReservedNumbers().NewNumberRange()
 	err := r.SetStart(1)
+	require.Nil(t, err)
+	err = r.InsertIntoParent(0)
+	require.NotNil(t, err)
+
+	r = protobuf.NewDocument().NewEnum().NewReservedNumbers().NewNumberRange()
+	err = r.SetEnd(1)
 	require.Nil(t, err)
 	err = r.InsertIntoParent(0)
 	require.NotNil(t, err)
 }
 
 func TestValidateReservedLabels(t *testing.T) {
-	e := protobuf.NewDocument().NewEnum()
-	rl := e.NewReservedLabels()
+	rl := protobuf.NewDocument().NewEnum().NewReservedLabels()
 	err := rl.InsertIntoParent(0)
 	require.NotNil(t, err)
 	err = rl.InsertLabel(0, "invalid!")
