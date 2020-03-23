@@ -104,11 +104,19 @@ func (r *reservedNumbers) validateNumber(n FieldNumber) error {
 }
 
 func (r reservedNumbers) validateAsEnumField() error {
-	panic("not implemented")
+	if len(r.numbers) < 1 {
+		return errors.New("reserved numbers need at least one entry")
+	}
+	for _, n := range r.numbers {
+		if err := r.validateNumber(n); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (r reservedNumbers) validateAsMessageField() error {
-	panic("not implemented")
+	return r.validateAsEnumField()
 }
 
 func (r reservedNumbers) hasLabel(l *label) bool {
@@ -192,7 +200,7 @@ func (r reservedLabels) validateAsEnumField() error {
 		return errors.New("reserved labels need at least one entry")
 	}
 	for _, l := range r.labels {
-		if err := l.parent.validateLabel(l); err != nil {
+		if err := r.validateLabel(l); err != nil {
 			return err
 		}
 	}

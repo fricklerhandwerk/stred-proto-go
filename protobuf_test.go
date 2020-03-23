@@ -269,6 +269,9 @@ func TestMessageValidateReservedNumber(t *testing.T) {
 
 	err = nr2.SetEnd(21)
 	require.NotNil(t, err)
+
+	err = r.InsertIntoParent(0)
+	require.Nil(t, err)
 }
 
 func TestEnumValidateReservedNumber(t *testing.T) {
@@ -307,6 +310,9 @@ func TestEnumValidateReservedNumber(t *testing.T) {
 
 	err = nr2.SetEnd(21)
 	require.NotNil(t, err)
+
+	err = r.InsertIntoParent(0)
+	require.Nil(t, err)
 }
 
 func TestMessageValidateDefinition(t *testing.T) {
