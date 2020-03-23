@@ -56,6 +56,11 @@ type Document interface {
 	MaybePackage() *string
 	SetPackage(string) error
 
+	NewImport() NewImport
+
+	NumImports() uint
+	Import(index uint) Import
+
 	NewService() NewService
 
 	NumServices() uint
@@ -71,6 +76,22 @@ type Document interface {
 
 	insertService(index uint, service *service) error
 	insertDefinition(index uint, definition Definition) error
+}
+
+type NewImport interface {
+	MaybePath() *string
+	SetPath(string) error
+	Public() bool
+	SetPublic(bool) error
+
+	InsertIntoParent(index uint) error
+}
+
+type Import interface {
+	Path() string
+	SetPath(string) error
+	Public() bool
+	SetPublic(bool) error
 }
 
 type NewService interface {
