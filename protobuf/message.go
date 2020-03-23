@@ -179,6 +179,9 @@ func (m *message) InsertIntoParent(i uint) (err error) {
 }
 
 func (m message) validateLabel(l *label) error {
+	if l == nil {
+		return fmt.Errorf("label not set")
+	}
 	for _, f := range m.fields {
 		if f.hasLabel(l) {
 			return fmt.Errorf("label %q already declared", l.value)

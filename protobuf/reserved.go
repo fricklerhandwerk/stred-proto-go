@@ -100,10 +100,7 @@ func (r *reservedNumbers) validateNumber(n FieldNumber) error {
 			return fmt.Errorf("%s already reserved", source)
 		}
 	}
-	if err := r.parent.validateNumber(n); err != nil {
-		return err
-	}
-	return nil
+	return r.parent.validateNumber(n)
 }
 
 func (r reservedNumbers) validateAsEnumField() error {

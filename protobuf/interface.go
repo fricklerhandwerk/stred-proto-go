@@ -300,11 +300,14 @@ type OneOf interface {
 	Label() string
 	SetLabel(string) error
 
+	NumFields() uint
+	Field(uint) OneOfField
+
 	NewField() NewOneOfField
 
 	validateLabel(*label) error
-	validateNumber(Number) error
-	insertField(index uint, field OneOfField) error
+	validateNumber(FieldNumber) error
+	insertField(index uint, field *oneOfField) error
 
 	validateAsMessageField() error
 	hasLabel(*label) bool

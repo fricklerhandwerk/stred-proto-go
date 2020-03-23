@@ -314,11 +314,14 @@ func (o *oneOf) NewField() NewOneOfField {
 	}
 }
 
-func (o oneOf) insertField(i uint, f *oneOfField) error {
+func (o *oneOf) insertField(i uint, f *oneOfField) error {
 	if err := f.validateAsOneOfField(); err != nil {
 		return err
 	}
-	panic("not implemented")
+	o.fields = append(o.fields, nil)
+	copy(o.fields[i+1:], o.fields[i:])
+	o.fields[i] = f
+	return nil
 }
 
 func (o oneOf) validateLabel(l *label) error {
@@ -326,11 +329,14 @@ func (o oneOf) validateLabel(l *label) error {
 }
 
 func (o oneOf) validateNumber(n FieldNumber) error {
+	if o.hasNumber(n) {
+		return fmt.Errorf("field number %s already reserved", n)
+	}
 	return o.parent.validateNumber(n)
 }
 
 func (o *oneOf) validateAsMessageField() error {
-	panic("not implemented")
+	return o.parent.validateLabel(o.label)
 }
 
 func (o oneOf) hasNumber(n FieldNumber) bool {
@@ -340,6 +346,15 @@ func (o oneOf) hasNumber(n FieldNumber) bool {
 		}
 	}
 	return false
+}
+
+func (o oneOf) hasLabel(l *label) bool {
+	for _, f := range o.fields {
+		if f.hasLabel(l) {
+			return true
+		}
+	}
+	return o.label.hasLabel(l)
 }
 
 type newMapField struct {

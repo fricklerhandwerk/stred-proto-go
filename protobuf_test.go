@@ -407,3 +407,56 @@ func TestValidateReservedLabels(t *testing.T) {
 	err = rl.Label(1).SetValue("someOtherLabel")
 	require.Nil(t, err)
 }
+
+func TestOneOf(t *testing.T) {
+	m := protobuf.NewDocument().NewMessage()
+	o1 := m.NewOneOf()
+	err := o1.SetLabel("invalid!")
+	require.NotNil(t, err)
+	// label not set
+	err = o1.InsertIntoParent(0)
+	require.NotNil(t, err)
+
+	err = o1.SetLabel("myOneOf")
+	require.Nil(t, err)
+	f1 := o1.NewField()
+	err = f1.SetLabel("foo")
+	require.Nil(t, err)
+	err = f1.SetNumber(1)
+	require.Nil(t, err)
+	// type not set
+	err = f1.InsertIntoParent(0)
+	require.NotNil(t, err)
+	err = f1.SetType(protobuf.Uint32)
+	require.Nil(t, err)
+	err = f1.InsertIntoParent(0)
+	require.Nil(t, err)
+	require.EqualValues(t, 1, o1.NumFields())
+
+	err = o1.InsertIntoParent(0)
+	require.Nil(t, err)
+	require.EqualValues(t, 1, m.NumFields())
+
+	o2 := m.NewOneOf()
+	// duplicate label
+	err = o2.SetLabel("myOneOf")
+	require.NotNil(t, err)
+	err = o2.SetLabel("myOneOf2")
+	require.Nil(t, err)
+	f2 := o2.NewField()
+	// duplicate field label
+	err = f2.SetLabel("foo")
+	require.NotNil(t, err)
+	err = f2.SetLabel("bar")
+	require.Nil(t, err)
+	// duplicate field number
+	err = f2.SetNumber(1)
+	require.NotNil(t, err)
+	err = f2.SetNumber(2)
+	require.Nil(t, err)
+
+	err = f2.SetType(protobuf.Bytes)
+	require.Nil(t, err)
+	err = f2.InsertIntoParent(0)
+	require.Nil(t, err)
+}
