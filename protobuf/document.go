@@ -63,6 +63,14 @@ func (d document) validateLabel(l *label) error {
 	return nil
 }
 
+func (d document) NumImports() uint {
+	return uint(len(d.imports))
+}
+
+func (d document) Import(i uint) Import {
+	return d.imports[i]
+}
+
 func (d document) NumServices() uint {
 	return uint(len(d.services))
 }
@@ -102,6 +110,14 @@ func (d *document) insertDefinition(i uint, def Definition) error {
 	return nil
 }
 
+func (d *document) NewImport() NewImport {
+	return &newImport{
+		_import: &_import{
+			parent: d,
+		},
+	}
+}
+
 func (d *document) NewService() NewService {
 	return &newService{
 		service: &service{
@@ -122,15 +138,52 @@ func (d *document) NewEnum() NewEnum {
 	}
 }
 
+type newImport struct {
+	_import *_import
+}
+
+func (i newImport) MaybePath() *string {
+	if i._import == nil {
+		return nil
+	}
+	out := i._import.path
+	return &out
+}
+
+func (i newImport) SetPath(string) error {
+	panic("not implemented")
+}
+
+func (i newImport) Public() bool {
+	return i._import.public
+}
+
+func (i newImport) SetPublic(b bool) error {
+	panic("not implemented")
+}
+
+func (i newImport) InsertIntoParent(index uint) error {
+	panic("not implemented")
+}
+
 type _import struct {
+	parent *document
 	path   string
 	public bool
+}
+
+func (i _import) Path() string {
+	return i.path
 }
 
 func (i _import) SetPath(string) error {
 	panic("not implemented")
 }
 
-func (i _import) SetPublic(b bool) {
+func (i _import) Public() bool {
+	return i.public
+}
+
+func (i _import) SetPublic(b bool) error {
 	panic("not implemented")
 }
