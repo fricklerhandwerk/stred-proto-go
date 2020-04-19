@@ -1,44 +1,54 @@
 package protobuf
 
-// this interface definition serves multiple purposes.
+// the goal of this package's interface is to reduce input parameters to
+// identifier strings, field numbers, boolean flags, built-in and valid
+// user-defined message types, and positive array indices for ordering. it must
+// be impossible to update the document with an invalid value, and ideally
+// impossible to even supply an invald value.
+
+// a primary design decision following this principle is that once-valid values
+// cannot be invalidated. for example setting an unset field to some valid
+// value means that this field's value can only be changed to another valid
+// one, but not unset any more.
+
+// additionally consumers are not supposed to create values of any of these
+// types other than an empty `Document`, which will properly initialise and
+// produce all subsidiary items. these are therefore only visible through the
+// interfaces they implement. the consumer is relieved of any additional setup
+// requirements. admittedly this is not very idiomatic Go, but exporting types
+// and writing in documentation that they should not be used is of much less
+// use than a compiler-enforced constraint.
+
+// these interfaces do not only model external behavior, but also guide the
+// implementation by constraining internal relations to some extent. they
+// also reduce cognitive overhead by centralising definitions of required
+// behavior in one location, thus reducing opportunities for programmer
+// error when used as a weak replacement for strong types.
+// it is not necessary at all to it that way. most unexported methods can be
+// left out, as they are specific to the implementing types, and internally
+// we could instead specify interfaces for the required subsets of behavior.
+// except for `KeyType` and `FieldType`, public interfaces do not have to be
+// sealed to prevent misuse. but there would be little added convenience for
+// the effort to create a different facade. removing all other private
+// methods would merely improve readability for consumers, and only if they
+// look at this file. even if it were possible to completely replace the
+// implementation - which it is not, due to those two mandatory sealed
+// interfaces - there is not much point to it, as the library is
+// light-weight and free of side-effects.
 //
-// 1. since the goal of this library is to be very hard to misuse, its
-//    consumers are not supposed to create values of any of its types other
-//    than an empty `Document`, which will properly initialise and produce all
-//    subsidiary items. these are therefore only visible through the interfaces
-//    they implement. the consumer is relieved of any additional setup
-//    requirements. interacting with the interfaces by passing `string` and
-//    `uint` parameters is almost everything there is.
-//    admittedly this is not very idiomatic Go, but exporting types and writing
-//    in documentation that they should not be used is of much less use than
-//    a compiler-enforced constraint.
-// 2. these interfaces do not only model external behavior, but also guide the
-//    implementation by constraining internal relations to some extent. they
-//    also reduce cognitive overhead by avoiding to define required behavior in
-//    multiple locations, thus reducing opportunities for programmer error when
-//    used as a weak replacement for strong types.
-//    it is not necessary at all to it that way. most unexported methods can be
-//    left out, as they are specific to the implementing types, and internally
-//    we could instead specify interfaces for the required subsets of behavior.
-//    except for `KeyType` and `FieldType`, public interfaces do not have to be
-//    sealed to prevent misuse. but there would be little added convenience for
-//    the effort to create a different facade. removing all other private
-//    methods would merely improve readability for consumers, and only if they
-//    look at this file. even if it were possible to completely replace the
-//    implementation - which it is not, due to those two mandatory sealed
-//    interfaces - there is not much point to it, as the library is
-//    light-weight and free of side-effects.
-//
-// although there is significant overlap between items, all methods are
-// declared explicitly. no non-trivial set of methods should be present more
-// than twice anyway, such that deduplication would actually reduce
-// readability.
 // the layout follows a roughly hierarchic pattern: the root object is
 // `Document`, from which we can create tentative subsidiary items, which are
-// defined below. their name is prefixed with `New`, and for each we can set
-// attributes, add children (which are likewise preliminary at creation), and
-// insert the object into the parent it was created by, at a specified index in
-// the parent's collection. insertion means emptying and thus invalidating the
+// defined below. their name is prefixed with `New`, and for each we can set required
+// attributes, and insert the object into the parent it was created by, at a specified index in
+// the parent's collection.
+// tentative objects are not tracked by the document and thus may not have
+// children. first, doing that would complicate the necessary types to a degree
+// Go does not afford to practically handle.  second, it prevents a problem
+// with dangling references, since by design the document does not account for
+// tentative elements - the document only cares about semantically correct
+// structures, so tentative ones cannot even be referenced other than on
+// creation, and cannot be passed into the document.
+// insertion into the parent means emptying and thus invalidating the
 // tentative object. this is mostly for implemenation simplicity; we could also
 // deep-copy the new structure into its parent to have side-effect free
 // handling of the new object, but this is much additional work without much
@@ -47,496 +57,496 @@ package protobuf
 // on the tentative variants, attribute accessors have names prefixed with
 // `Maybe` and return pointers, signifying that a value may not have been set
 // yet. if not `nil`, pointers point to a copy of the original value, as all
-// mutation must go through the appropriate interface.  where interfaces are
+// mutation must go through the appropriate interface. where interfaces are
 // returned, consumers must check for `nil`. objects retrieved from a parent
 // will always return values or non-nil interfaces, as they have necessarily
 // been validated prior.
 
-type Document interface {
-	MaybePackage() *string
-	SetPackage(string) error
+type MaybeIdentifier interface {
+	Get() *string
+	Set(string) error
 
-	NewImport() NewImport
-
-	NumImports() uint
-	Import(index uint) Import
-
-	NewService() NewService
-
-	NumServices() uint
-	Service(index uint) Service
-
-	NumDefinitions() uint
-	Definition(index uint) Definition
-
-	NewMessage() NewMessage
-	NewEnum() NewEnum
-
-	validateLabel(*label) error
-
-	insertService(index uint, service *service) error
-	insertDefinition(index uint, definition Definition) error
+	Parent() Labelled
 }
 
-type NewImport interface {
-	MaybePath() *string
-	SetPath(string) error
-	Public() bool
-	SetPublic(bool) error
+type Identifier interface {
+	Get() string
+	Set(string) error
 
-	InsertIntoParent(index uint) error
+	Parent() Labelled
 }
 
-type Import interface {
-	Path() string
-	SetPath(string) error
-	Public() bool
-	SetPublic(bool) error
+type Labelled interface {
+	_hasLabel()
 }
 
-type NewService interface {
-	MaybeLabel() *string
-	SetLabel(string) error
-
-	NumRPCs() uint
-	RPC(index uint) RPC
-
-	NewRPC() NewRPC
-
-	InsertIntoParent(index uint) error
-}
-
-type Service interface {
-	Label() string
-	SetLabel(string) error
-
-	NumRPCs() uint
-	RPC(index uint) RPC
-
-	NewRPC() NewRPC
-
-	validateLabel(*label) error
-	insertRPC(index uint, rpc *rpc) error
-
-	hasLabel(*label) bool
-	validateAsService() error
-}
-
-type NewRPC interface {
-	MaybeLabel() *string
-	SetLabel(string) error
-
-	MaybeRequestType() Message
-	SetRequestType(Message) error
-	StreamRequest() bool
-	SetStreamRequest(bool) error
-
-	MaybeResponseType() Message
-	SetResponseType(Message) error
-	StreamResponse() bool
-	SetStreamResponse(bool) error
-
-	InsertIntoParent(index uint) error
-}
-
-type RPC interface {
-	Label() string
-	SetLabel(string) error
-
-	RequestType() Message
-	SetRequestType(Message) error
-	StreamRequest() bool
-	SetStreamRequest(bool) error
-
-	ResponseType() Message
-	SetResponseType(Message) error
-	StreamResponse() bool
-	SetStreamResponse(bool) error
-
-	validateAsRPC() error
-	hasLabel(*label) bool
-}
-
-type Definition interface {
-	Label() string
-	SetLabel(string) error
-
-	NumFields() uint
-	NewReservedNumbers() NewReservedNumbers
-	NewReservedLabels() NewReservedLabels
-
-	validateNumber(FieldNumber) error
-	validateLabel(*label) error
-
-	validateAsDefinition() error
-	hasLabel(*label) bool
-}
-
-type NewMessage interface {
-	MaybeLabel() *string
-	SetLabel(string) error
-
-	NumFields() uint
-	Field(uint) MessageField
-
-	NewField() NewField
-	NewMap() NewMap
-	NewOneOf() NewOneOf
-	NewReservedNumbers() NewReservedNumbers
-	NewReservedLabels() NewReservedLabels
-
-	NumDefinitions() uint
-	Definition(uint) Definition
-
-	NewMessage() NewMessage
-	NewEnum() NewEnum
-
-	InsertIntoParent(index uint) error
-}
-
-type Message interface {
-	Label() string
-	SetLabel(string) error
-
-	NumFields() uint
-	Field(uint) MessageField
-
-	NewField() NewField
-	NewMap() NewMap
-	NewOneOf() NewOneOf
-	NewReservedNumbers() NewReservedNumbers
-	NewReservedLabels() NewReservedLabels
-
-	NumDefinitions() uint
-	Definition(uint) Definition
-
-	NewMessage() NewMessage
-	NewEnum() NewEnum
-
-	validateNumber(FieldNumber) error
-	validateLabel(*label) error
-
-	insertField(uint, MessageField) error
-	insertDefinition(index uint, def Definition) error
-
-	validateAsDefinition() error
-	hasLabel(*label) bool
-
-	FieldType
-}
-
-type NewField interface {
-	MaybeLabel() *string
-	SetLabel(string) error
-
-	MaybeNumber() *uint
-	SetNumber(uint) error
-
-	MaybeType() FieldType
-	SetType(FieldType) error
-
-	Repeated() bool
-	SetRepeated(bool) error
-
-	Deprecated() bool
-	SetDeprecated(bool) error
-
-	InsertIntoParent(index uint) error
-}
-
-type Field interface {
-	Label() string
-	SetLabel(string) error
-
-	Number() uint
-	SetNumber(uint) error
-
-	Type() FieldType
-	SetType(FieldType) error
-
-	Repeated() bool
-	SetRepeated(bool) error
-
-	Deprecated() bool
-	SetDeprecated(bool) error
-
-	validateAsMessageField() error
-	hasLabel(*label) bool
-	hasNumber(FieldNumber) bool
-}
-
-type NewMap interface {
-	MaybeLabel() *string
-	SetLabel(string) error
-
-	MaybeNumber() *uint
-	SetNumber(uint) error
-
-	MaybeKeyType() KeyType
-	SetKeyType(KeyType) error
-
-	MaybeValueType() FieldType
-	SetValueType(FieldType) error
-
-	Deprecated() bool
-	SetDeprecated(bool) error
-
-	InsertIntoParent(index uint) error
-}
-
-type Map interface {
-	Label() string
-	SetLabel(string) error
-
-	Number() uint
-	SetNumber(uint) error
-
-	KeyType() KeyType
-	SetKeyType(KeyType) error
-
-	ValueType() FieldType
-	SetValueType(FieldType) error
-
-	Deprecated() bool
-	SetDeprecated(bool) error
-
-	validateAsMessageField() error
-	hasLabel(*label) bool
-	hasNumber(FieldNumber) bool
-}
-
-type NewOneOf interface {
-	MaybeLabel() *string
-	SetLabel(string) error
-
-	NumFields() uint
-	Field(uint) OneOfField
-
-	NewField() NewOneOfField
-
-	InsertIntoParent(index uint) error
-}
-
-type OneOf interface {
-	Label() string
-	SetLabel(string) error
-
-	NumFields() uint
-	Field(uint) OneOfField
-
-	NewField() NewOneOfField
-
-	validateLabel(*label) error
-	validateNumber(FieldNumber) error
-	insertField(index uint, field *oneOfField) error
-
-	validateAsMessageField() error
-	hasLabel(*label) bool
-	hasNumber(FieldNumber) bool
-}
-
-type NewOneOfField interface {
-	MaybeLabel() *string
-	SetLabel(string) error
-
-	MaybeNumber() *uint
-	SetNumber(uint) error
-
-	MaybeType() FieldType
-	SetType(FieldType) error
-
-	Deprecated() bool
-	SetDeprecated(bool) error
-
-	InsertIntoParent(index uint) error
-}
-
-type OneOfField interface {
-	Label() string
-	SetLabel(string) error
-
-	Number() uint
-	SetNumber(uint) error
-
-	Type() FieldType
-	SetType(FieldType) error
-
-	Deprecated() bool
-	SetDeprecated(bool) error
-
-	validateAsOneOfField() error
-	hasLabel(*label) bool
-	hasNumber(FieldNumber) bool
-}
-
-type NewReservedNumbers interface {
-	NumNumbers() uint
-	Number(index uint) FieldNumber
-
-	InsertNumber(index, number uint) error
-	NewNumberRange() NewNumberRange
-
-	InsertIntoParent(index uint) error
-}
-
-type ReservedNumbers interface {
-	NumNumbers() uint
-	Number(index uint) FieldNumber
-
-	InsertNumber(index, number uint) error
-	NewNumberRange() NewNumberRange
-
-	validateNumber(FieldNumber) error
-	insertNumber(index uint, number FieldNumber) error
-
-	validateAsMessageField() error
-	validateAsEnumField() error
-	hasLabel(*label) bool
-	hasNumber(FieldNumber) bool
-}
-
-type NewReservedLabels interface {
-	NumLabels() uint
-	Label(index uint) Label
-
-	InsertLabel(index uint, label string) error
-
-	InsertIntoParent(index uint) error
-}
-
-type ReservedLabels interface {
-	NumLabels() uint
-	Label(index uint) Label
-
-	InsertLabel(index uint, label string) error
-
-	validateLabel(*label) error
-
-	validateAsMessageField() error
-	validateAsEnumField() error
-	hasLabel(*label) bool
-	hasNumber(FieldNumber) bool
-}
-
-type MessageField interface {
-	validateAsMessageField() error
-	hasLabel(*label) bool
-	hasNumber(FieldNumber) bool
-}
-
-type NewEnum interface {
-	MaybeLabel() *string
-	SetLabel(string) error
-
-	AllowAlias() bool
-	SetAllowAlias(bool) error
-
-	NumFields() uint
-	Field(uint) EnumField
-
-	NewVariant() NewVariant
-	NewReservedNumbers() NewReservedNumbers
-	NewReservedLabels() NewReservedLabels
-
-	InsertIntoParent(index uint) error
-}
-
-type Enum interface {
-	Label() string
-	SetLabel(string) error
-
-	AllowAlias() bool
-	SetAllowAlias(bool) error
-
-	NumFields() uint
-	Field(uint) EnumField
-
-	NewVariant() NewVariant
-	NewReservedNumbers() NewReservedNumbers
-	NewReservedLabels() NewReservedLabels
-
-	validateLabel(*label) error
-	validateNumber(FieldNumber) error
-	insertField(uint, EnumField) error
-
-	validateAsDefinition() error
-	hasLabel(*label) bool
-
-	FieldType
-}
-
-type EnumField interface {
-	validateAsEnumField() error
-	hasLabel(*label) bool
-	hasNumber(FieldNumber) bool
-}
-
-type NewVariant interface {
-	MaybeLabel() *string
-	SetLabel(string) error
-
-	MaybeNumber() *uint
-	SetNumber(uint) error
-
-	Deprecated() bool
-	SetDeprecated(bool) error
-
-	InsertIntoParent(index uint) error
-}
-
-type Variant interface {
-	Label() string
-	SetLabel(string) error
-
-	Number() uint
-	SetNumber(uint) error
-
-	Deprecated() bool
-	SetDeprecated(bool) error
-
-	validateAsEnumField() error
-	hasNumber(FieldNumber) bool
-	hasLabel(*label) bool
-}
-
-type Label interface {
-	Value() string
-	SetValue(string) error
+type MaybeNumber interface {
+	Get() *uint
+	Set(uint) error
+
+	Parent() Numbered
 }
 
 type Number interface {
-	FieldNumber
+	Get() uint
+	Set(uint) error
 
-	Value() uint
-	SetValue(uint) error
+	Parent() Numbered
+
+	FieldNumber
 }
 
-type NewNumberRange interface {
-	MaybeStart() *uint
-	SetStart(uint) error
-	MaybeEnd() *uint
-	SetEnd(uint) error
-
-	InsertIntoParent(index uint) error
+type Numbered interface {
+	_hasNumber()
 }
 
-type NumberRange interface {
-	FieldNumber
+type Flag interface {
+	Get() bool
+	Set(bool) error
 
-	Start() uint
-	SetStart(uint) error
-	End() uint
-	SetEnd(uint) error
+	Parent() Flagged
+}
+
+type Flagged interface {
+	_hasFlag()
+}
+
+type MaybeType interface {
+	Get() TypeID
+	Set(TypeID) error
+
+	Parent() NewTyped
+}
+
+type NewTyped interface {
+	Type() MaybeType
+}
+
+type Type interface {
+	Get() TypeID
+	Set(TypeID) error
+
+	Parent() Typed
+}
+
+type Typed interface {
+	Type() Type
+}
+
+type MaybeKeyType interface {
+	Get() KeyTypeID
+	Set(KeyTypeID) error
+
+	Parent() NewMap
+}
+
+type KeyType interface {
+	Get() KeyTypeID
+	Set(KeyTypeID) error
+
+	Parent() Map
+}
+
+// Field type identifier. Valid values are all built-in types and `Message`s.
+// Note that API consumers cannot create types which implement interface
+// `Message`, and the package will only emit properly constructed `Message`s.
+type TypeID interface {
+	_isFieldType()
+}
+
+// Map key type identifier.
+// Valid values are all built-in types except:
+// - `double`
+// - `float`
+// - `bytes`
+type KeyTypeID interface {
+	_isKeyType()
+}
+
+type Document interface {
+	// Copy of list of top-level declarations in user-defined order
+	Declarations() []TopLevelDeclaration
+
+	Package() MaybeIdentifier
+
+	// Copy of list of imports, no guaranteed order
+	Imports() []Import
+	NewImport() NewImport
+
+	// Copy of list of services, no guaranteed order
+	Services() []Service
+	NewService() NewService
+
+	// Copy of list of messages, no guaranteed order
+	Messages() []Message
+	NewMessage() NewMessage
+
+	// Copy of list of enums, no guaranteed order
+	Enums() []Enum
+	NewEnum() NewEnum
+}
+
+type TopLevelDeclaration interface {
+	_isDeclaration()
+}
+
+type NewImport interface {
+	Path() MaybeIdentifier
+	Public() Flag
+
+	Insert(index uint) error
+	Parent() Document
+}
+
+type Import interface {
+	Path() Identifier
+	Public() Flag
+
+	Insert(index uint)
+	Parent() Document
+}
+
+type NewService interface {
+	Label() MaybeIdentifier
+	SetLabel(string) error
+
+	Insert(index uint) error
+	Parent() Document
+}
+
+type Service interface {
+	Label() Identifier
+
+	// Copy of list of RPCs in user-defined order
+	RPCs() []RPC
+	NewRPC() NewRPC
+
+	Insert(index uint)
+	Parent() Document
+}
+
+type NewRPC interface {
+	Label() MaybeIdentifier
+
+	Request() MaybeMessageType
+	Response() MaybeMessageType
+
+	Insert(index uint) error
+	Parent() Service
+}
+
+type MaybeMessageType interface {
+	Get() Message
+	Set(Message) error
+	Stream() Flag
+
+	Parent() NewRPC
+}
+
+type RPC interface {
+	Label() Identifier
+
+	Request() MessageType
+	Response() MessageType
+
+	Insert(index uint)
+	Parent() Service
+}
+
+type MessageType interface {
+	Get() Message
+	Set(Message) error
+	Stream() Flag
+
+	Parent() RPC
+}
+
+type Definition interface {
+	Label() Identifier
+
+	NewReservedNumber() NewReservedNumber
+	NewReservedRange() NewReservedRange
+	NewReservedLabel() NewReservedLabel
+
+	Insert(index uint)
+	Parent() DefinitionContainer
+}
+
+type DefinitionContainer interface {
+	Messages() []Message
+	NewMessage() NewMessage
+
+	Enums() []Enum
+	NewEnum() NewEnum
+}
+
+type NewMessage interface {
+	Label() Identifier
+
+	Insert(index uint) error
+	Parent() DefinitionContainer
+}
+
+type Message interface {
+	Label() Identifier
+
+	Declarations() []MessageDeclaration
+
+	Fields() []MessageField
+	NewField() NewField
+	NewMap() NewMap
+	NewOneOf() NewOneOf
+	NewReservedNumber() NewReservedNumber
+	NewReservedRange() NewReservedRange
+	NewReservedLabel() NewReservedLabel
+
+	Messages() []Message
+	NewMessage() NewMessage
+
+	Enums() []Enum
+	NewEnum() NewEnum
+
+	Insert(index uint)
+	Parent() DefinitionContainer
+
+	TypeID
+}
+
+type MessageDeclaration interface {
+	_isMessageDeclaration()
+}
+
+type NewField interface {
+	Label() MaybeIdentifier
+	Number() MaybeNumber
+	Type() MaybeType
+	Repeated() Flag
+	Deprecated() Flag
+
+	Insert(index uint) error
+	Parent() Message
+}
+
+type Field interface {
+	Label() Identifier
+	Number() Number
+	Type() Type
+	Repeated() Flag
+	Deprecated() Flag
+
+	Insert(index uint)
+	Parent() Message
+}
+
+type NewMap interface {
+	Label() MaybeIdentifier
+	Number() MaybeNumber
+	KeyType() MaybeKeyType
+	Type() MaybeType
+	Deprecated() Flag
+
+	Insert(index uint) error
+	Parent() Message
+}
+
+type Map interface {
+	Label() Identifier
+	Number() Number
+	KeyType() KeyType
+	Type() Type
+	Deprecated() Flag
+
+	Insert(index uint)
+	Parent() Message
+}
+
+type NewOneOf interface {
+	Label() MaybeIdentifier
+
+	// `oneof` must have at least one field. since by design decision new objects
+	// cannot create children, the first field is embedded here.
+	FieldLabel() MaybeIdentifier
+	Number() MaybeNumber
+	Type() MaybeType
+	Deprecated() Flag
+
+	Insert(index uint) error
+	Parent() Message
+}
+
+type OneOf interface {
+	Label() Identifier
+
+	Fields() []OneOfField
+	NewField() NewOneOfField
+
+	Insert(index uint)
+	Parent() Message
+}
+
+type NewOneOfField interface {
+	Label() MaybeIdentifier
+	Number() MaybeNumber
+	Type() MaybeType
+	Deprecated() Flag
+
+	Insert(index uint) error
+	Parent() OneOf
+}
+
+type OneOfField interface {
+	Label() Identifier
+	Number() Number
+	Type() Type
+	Deprecated() Flag
+
+	Insert(index uint)
+	Parent() OneOf
+}
+
+type ReservedNumbers interface {
+	Numbers() []FieldNumber
+
+	NewNumberRange() NewRange
+	NewNumber() NewNumber
+
+	Insert(index uint)
+	Parent() Definition
+}
+
+type NewReservedRange interface {
+	Start() MaybeNumber
+	End() MaybeNumber
+
+	Insert(uint) error
+	Parent() Definition
+}
+
+type NewRange interface {
+	Start() MaybeNumber
+	End() MaybeNumber
+
+	Insert(uint) error
+	Parent() ReservedNumbers
+}
+
+type ReservedRange interface {
+	Start() Number
+	End() Number
+
+	Insert(index uint)
+	Parent() ReservedNumbers
+
+	FieldNumber
+}
+
+type NewReservedNumber interface {
+	Get() *uint
+	Set(uint) error
+
+	Insert(uint) error
+	Parent() Definition
+}
+
+type NewNumber interface {
+	Get() *uint
+	Set(uint) error
+
+	Insert(uint) error
+	Parent() ReservedNumbers
+}
+
+type ReservedNumber interface {
+	Get() uint
+	Set(uint) error
+
+	Insert(uint)
+	Parent() ReservedNumbers
+}
+
+type ReservedLabels interface {
+	Labels() []Identifier
+
+	NewLabel() NewLabel
+
+	Insert(index uint)
+	Parent() Definition
+}
+
+type NewReservedLabel interface {
+	Get() *string
+	Set(string) error
+
+	Insert(uint) error
+	Parent() Definition
+}
+
+type NewLabel interface {
+	Get() *string
+	Set(string) error
+
+	Insert(uint) error
+	Parent() ReservedLabels
+}
+
+type ReservedLabel interface {
+	Get() string
+	Set(string) error
+
+	Insert(uint)
+	Parent() ReservedLabels
+}
+
+type MessageField interface {
+	_isMessageField()
+}
+
+type NewEnum interface {
+	Label() MaybeIdentifier
+	AllowAlias() Flag
+
+	Insert(index uint) error
+	Parent() DefinitionContainer
+}
+
+type Enum interface {
+	Label() Identifier
+	AllowAlias() Flag
+
+	Fields() []EnumField
+
+	NewVariant() NewVariant
+	NewReservedRange() NewReservedRange
+	NewReservedNumber() NewReservedNumber
+	NewReservedLabel() NewReservedLabel
+
+	Parent() DefinitionContainer
+
+	TypeID
+}
+
+type EnumField interface {
+	_isEnumField()
+}
+
+type NewVariant interface {
+	Label() MaybeIdentifier
+	Number() MaybeNumber
+	Deprecated() Flag
+
+	Insert(index uint) error
+	Parent() Enum
+}
+
+type Variant interface {
+	Label() Identifier
+	Number() Number
+	Deprecated() Flag
+
+	Insert(index uint) error
+	Parent() Enum
 }
 
 type FieldNumber interface {
 	intersects(FieldNumber) bool
-}
-
-type KeyType interface {
-	_isKeyType()
-}
-
-type FieldType interface {
-	_isFieldType()
 }
