@@ -5,13 +5,9 @@ import (
 	"regexp"
 )
 
-type declarationContainer interface {
-	validateLabel(*label) error
-}
-
 type label struct {
 	value  string
-	parent declarationContainer
+	parent Labelled
 }
 
 func (l label) Value() string {

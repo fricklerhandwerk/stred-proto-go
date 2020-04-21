@@ -38,9 +38,9 @@ package protobuf
 //
 // the layout follows a roughly hierarchic pattern: the root object is
 // `Document`, from which we can create tentative subsidiary items, which are
-// defined below. their name is prefixed with `New`, and for each we can set required
-// attributes, and insert the object into the parent it was created by, at a specified index in
-// the parent's collection.
+// defined below. their name is prefixed with `New`, and for each we can set
+// required attributes, and insert the object into the parent it was created
+// by, at a specified index in the parent's collection.
 // tentative objects are not tracked by the document and thus may not have
 // children. first, doing that would complicate the necessary types to a degree
 // Go does not afford to practically handle.  second, it prevents a problem
@@ -62,33 +62,19 @@ package protobuf
 // will always return values or non-nil interfaces, as they have necessarily
 // been validated prior.
 
-type MaybeIdentifier interface {
+type Identifier interface {
 	Get() *string
 	Set(string) error
 
 	Parent() Labelled
 }
 
-type Identifier interface {
-	Get() string
-	Set(string) error
-
-	Parent() Labelled
-}
-
 type Labelled interface {
-	_hasLabel()
-}
-
-type MaybeNumber interface {
-	Get() *uint
-	Set(uint) error
-
-	Parent() Numbered
+	validateLabel(*label) error
 }
 
 type Number interface {
-	Get() uint
+	Get() *uint
 	Set(uint) error
 
 	Parent() Numbered
@@ -97,7 +83,7 @@ type Number interface {
 }
 
 type Numbered interface {
-	_hasNumber()
+	validateNumber(FieldNumber) error
 }
 
 type Flag interface {
@@ -111,17 +97,6 @@ type Flagged interface {
 	_hasFlag()
 }
 
-type MaybeType interface {
-	Get() TypeID
-	Set(TypeID) error
-
-	Parent() NewTyped
-}
-
-type NewTyped interface {
-	Type() MaybeType
-}
-
 type Type interface {
 	Get() TypeID
 	Set(TypeID) error
@@ -131,13 +106,6 @@ type Type interface {
 
 type Typed interface {
 	Type() Type
-}
-
-type MaybeKeyType interface {
-	Get() KeyTypeID
-	Set(KeyTypeID) error
-
-	Parent() NewMap
 }
 
 type KeyType interface {
@@ -167,15 +135,15 @@ type Document interface {
 	// Copy of list of top-level declarations in user-defined order
 	Declarations() []TopLevelDeclaration
 
-	Package() MaybeIdentifier
+	Package() Identifier
 
 	// Copy of list of imports, no guaranteed order
 	Imports() []Import
-	NewImport() NewImport
+	NewImport() Import
 
 	// Copy of list of services, no guaranteed order
 	Services() []Service
-	NewService() NewService
+	NewService() Service
 
 	// Copy of list of messages, no guaranteed order
 	Messages() []Message
@@ -190,27 +158,11 @@ type TopLevelDeclaration interface {
 	_isDeclaration()
 }
 
-type NewImport interface {
-	Path() MaybeIdentifier
-	Public() Flag
-
-	Insert(index uint) error
-	Parent() Document
-}
-
 type Import interface {
 	Path() Identifier
 	Public() Flag
 
-	Insert(index uint)
-	Parent() Document
-}
-
-type NewService interface {
-	Label() MaybeIdentifier
-	SetLabel(string) error
-
-	Insert(index uint) error
+	InsertIntoParent(index uint) error
 	Parent() Document
 }
 
@@ -219,28 +171,10 @@ type Service interface {
 
 	// Copy of list of RPCs in user-defined order
 	RPCs() []RPC
-	NewRPC() NewRPC
+	NewRPC() RPC
 
-	Insert(index uint)
+	InsertIntoParent(index uint) error
 	Parent() Document
-}
-
-type NewRPC interface {
-	Label() MaybeIdentifier
-
-	Request() MaybeMessageType
-	Response() MaybeMessageType
-
-	Insert(index uint) error
-	Parent() Service
-}
-
-type MaybeMessageType interface {
-	Get() Message
-	Set(Message) error
-	Stream() Flag
-
-	Parent() NewRPC
 }
 
 type RPC interface {
@@ -249,7 +183,7 @@ type RPC interface {
 	Request() MessageType
 	Response() MessageType
 
-	Insert(index uint)
+	InsertIntoParent(index uint) error
 	Parent() Service
 }
 
@@ -264,12 +198,13 @@ type MessageType interface {
 type Definition interface {
 	Label() Identifier
 
-	NewReservedNumber() NewReservedNumber
-	NewReservedRange() NewReservedRange
-	NewReservedLabel() NewReservedLabel
+	NewReservedNumbers() ReservedNumbers
+	NewReservedLabels() ReservedLabels
 
-	Insert(index uint)
+	InsertIntoParent(index uint) error
 	Parent() DefinitionContainer
+
+	hasLabel(*label) bool
 }
 
 type DefinitionContainer interface {
@@ -283,7 +218,7 @@ type DefinitionContainer interface {
 type NewMessage interface {
 	Label() Identifier
 
-	Insert(index uint) error
+	InsertIntoParent(index uint) error
 	Parent() DefinitionContainer
 }
 
@@ -293,12 +228,11 @@ type Message interface {
 	Declarations() []MessageDeclaration
 
 	Fields() []MessageField
-	NewField() NewField
-	NewMap() NewMap
-	NewOneOf() NewOneOf
-	NewReservedNumber() NewReservedNumber
-	NewReservedRange() NewReservedRange
-	NewReservedLabel() NewReservedLabel
+	NewField() Field
+	NewMap() Map
+	NewOneOf() OneOf
+	NewReservedNumbers() ReservedNumbers
+	NewReservedLabels() ReservedLabels
 
 	Messages() []Message
 	NewMessage() NewMessage
@@ -306,7 +240,7 @@ type Message interface {
 	Enums() []Enum
 	NewEnum() NewEnum
 
-	Insert(index uint)
+	InsertIntoParent(index uint) error
 	Parent() DefinitionContainer
 
 	TypeID
@@ -316,17 +250,6 @@ type MessageDeclaration interface {
 	_isMessageDeclaration()
 }
 
-type NewField interface {
-	Label() MaybeIdentifier
-	Number() MaybeNumber
-	Type() MaybeType
-	Repeated() Flag
-	Deprecated() Flag
-
-	Insert(index uint) error
-	Parent() Message
-}
-
 type Field interface {
 	Label() Identifier
 	Number() Number
@@ -334,18 +257,7 @@ type Field interface {
 	Repeated() Flag
 	Deprecated() Flag
 
-	Insert(index uint)
-	Parent() Message
-}
-
-type NewMap interface {
-	Label() MaybeIdentifier
-	Number() MaybeNumber
-	KeyType() MaybeKeyType
-	Type() MaybeType
-	Deprecated() Flag
-
-	Insert(index uint) error
+	InsertIntoParent(index uint) error
 	Parent() Message
 }
 
@@ -356,21 +268,7 @@ type Map interface {
 	Type() Type
 	Deprecated() Flag
 
-	Insert(index uint)
-	Parent() Message
-}
-
-type NewOneOf interface {
-	Label() MaybeIdentifier
-
-	// `oneof` must have at least one field. since by design decision new objects
-	// cannot create children, the first field is embedded here.
-	FieldLabel() MaybeIdentifier
-	Number() MaybeNumber
-	Type() MaybeType
-	Deprecated() Flag
-
-	Insert(index uint) error
+	InsertIntoParent(index uint) error
 	Parent() Message
 }
 
@@ -378,20 +276,10 @@ type OneOf interface {
 	Label() Identifier
 
 	Fields() []OneOfField
-	NewField() NewOneOfField
+	NewField() OneOfField
 
-	Insert(index uint)
+	InsertIntoParent(index uint) error
 	Parent() Message
-}
-
-type NewOneOfField interface {
-	Label() MaybeIdentifier
-	Number() MaybeNumber
-	Type() MaybeType
-	Deprecated() Flag
-
-	Insert(index uint) error
-	Parent() OneOf
 }
 
 type OneOfField interface {
@@ -400,100 +288,52 @@ type OneOfField interface {
 	Type() Type
 	Deprecated() Flag
 
-	Insert(index uint)
+	InsertIntoParent(index uint) error
 	Parent() OneOf
 }
 
 type ReservedNumbers interface {
 	Numbers() []FieldNumber
 
-	NewNumberRange() NewRange
-	NewNumber() NewNumber
+	NewNumberRange() ReservedRange
+	NewNumber() ReservedNumber
 
-	Insert(index uint)
+	InsertIntoParent(index uint) error
 	Parent() Definition
-}
-
-type NewReservedRange interface {
-	Start() MaybeNumber
-	End() MaybeNumber
-
-	Insert(uint) error
-	Parent() Definition
-}
-
-type NewRange interface {
-	Start() MaybeNumber
-	End() MaybeNumber
-
-	Insert(uint) error
-	Parent() ReservedNumbers
 }
 
 type ReservedRange interface {
 	Start() Number
 	End() Number
 
-	Insert(index uint)
+	InsertIntoParent(index uint) error
 	Parent() ReservedNumbers
 
 	FieldNumber
 }
 
-type NewReservedNumber interface {
-	Get() *uint
-	Set(uint) error
-
-	Insert(uint) error
-	Parent() Definition
-}
-
-type NewNumber interface {
-	Get() *uint
-	Set(uint) error
-
-	Insert(uint) error
-	Parent() ReservedNumbers
-}
-
 type ReservedNumber interface {
-	Get() uint
+	Get() *uint
 	Set(uint) error
 
-	Insert(uint)
+	InsertIntoParent(index uint) error
 	Parent() ReservedNumbers
 }
 
 type ReservedLabels interface {
 	Labels() []Identifier
 
-	NewLabel() NewLabel
+	NewLabel() ReservedLabel
 
-	Insert(index uint)
+	InsertIntoParent(index uint) error
 	Parent() Definition
-}
-
-type NewReservedLabel interface {
-	Get() *string
-	Set(string) error
-
-	Insert(uint) error
-	Parent() Definition
-}
-
-type NewLabel interface {
-	Get() *string
-	Set(string) error
-
-	Insert(uint) error
-	Parent() ReservedLabels
 }
 
 type ReservedLabel interface {
-	Get() string
+	Get() *string
 	Set(string) error
 
-	Insert(uint)
+	InsertIntoParent(index uint) error
 	Parent() ReservedLabels
 }
 
@@ -502,10 +342,10 @@ type MessageField interface {
 }
 
 type NewEnum interface {
-	Label() MaybeIdentifier
+	Label() Identifier
 	AllowAlias() Flag
 
-	Insert(index uint) error
+	InsertIntoParent(index uint) error
 	Parent() DefinitionContainer
 }
 
@@ -515,10 +355,9 @@ type Enum interface {
 
 	Fields() []EnumField
 
-	NewVariant() NewVariant
-	NewReservedRange() NewReservedRange
-	NewReservedNumber() NewReservedNumber
-	NewReservedLabel() NewReservedLabel
+	NewVariant() Variant
+	NewReservedNumbers() ReservedNumbers
+	NewReservedLabels() ReservedLabels
 
 	Parent() DefinitionContainer
 
@@ -529,21 +368,12 @@ type EnumField interface {
 	_isEnumField()
 }
 
-type NewVariant interface {
-	Label() MaybeIdentifier
-	Number() MaybeNumber
-	Deprecated() Flag
-
-	Insert(index uint) error
-	Parent() Enum
-}
-
 type Variant interface {
 	Label() Identifier
 	Number() Number
 	Deprecated() Flag
 
-	Insert(index uint) error
+	InsertIntoParent(index uint) error
 	Parent() Enum
 }
 

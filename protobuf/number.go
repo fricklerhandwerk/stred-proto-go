@@ -5,13 +5,9 @@ import (
 	"fmt"
 )
 
-type numberContainer interface {
-	validateNumber(FieldNumber) error
-}
-
 type number struct {
 	value  uint
-	parent numberContainer
+	parent Numbered
 }
 
 func (n number) intersects(other FieldNumber) bool {
