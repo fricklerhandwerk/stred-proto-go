@@ -41,7 +41,7 @@ type message struct {
 	fields     map[MessageField]struct{}
 	messages   map[*message]struct{}
 	enums      map[*enum]struct{}
-	references map[*_type]struct{}
+	references map[*Type]struct{}
 	parent     DefinitionContainer
 
 	ValueType
@@ -114,14 +114,14 @@ func (m *message) insertMessage(n *message) error {
 	return nil
 }
 
-func (m *message) addReference(t *_type) {
+func (m *message) addReference(t *Type) {
 	if m.references == nil {
-		m.references = make(map[*_type]struct{})
+		m.references = make(map[*Type]struct{})
 	}
 	m.references[t] = struct{}{}
 }
 
-func (m *message) removeReference(t *_type) {
+func (m *message) removeReference(t *Type) {
 	delete(m.references, t)
 }
 

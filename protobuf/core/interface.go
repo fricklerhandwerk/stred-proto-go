@@ -64,17 +64,6 @@ package core
 // will always return values or non-nil interfaces, as they have necessarily
 // been validated prior.
 
-type Type interface {
-	Get() ValueType
-	Set(ValueType) error
-
-	Parent() Typed
-}
-
-type Typed interface {
-	Type() Type
-}
-
 type RepeatableType interface {
 	Get() ValueType
 	Set(ValueType) error
@@ -200,8 +189,8 @@ type Definition interface {
 	validateLabel(*Label) error
 	validateNumber(FieldNumber) error
 
-	addReference(*_type)
-	removeReference(*_type)
+	addReference(*Type)
+	removeReference(*Type)
 }
 
 type DefinitionContainer interface {
@@ -248,8 +237,8 @@ type Message interface {
 	validateNumber(FieldNumber) error
 	insertField(MessageField) error
 
-	addReference(*_type)
-	removeReference(*_type)
+	addReference(*Type)
+	removeReference(*Type)
 
 	ValueType
 }
@@ -258,7 +247,7 @@ type Field interface {
 	Label() *Label
 	Number() *Number
 	Deprecated() *Flag
-	Type() Type
+	Type() *Type
 	Repeated() *Flag
 
 	InsertIntoParent() error
@@ -272,7 +261,7 @@ type Map interface {
 	Number() *Number
 	Deprecated() *Flag
 	KeyType() KeyType
-	Type() Type
+	Type() *Type
 
 	InsertIntoParent() error
 	Parent() Message
@@ -295,7 +284,7 @@ type OneOf interface {
 type OneOfField interface {
 	Label() *Label
 	Number() *Number
-	Type() Type
+	Type() *Type
 	Deprecated() *Flag
 
 	InsertIntoParent() error
@@ -380,8 +369,8 @@ type Enum interface {
 	validateNumber(FieldNumber) error
 	insertField(EnumField) error
 
-	addReference(*_type)
-	removeReference(*_type)
+	addReference(*Type)
+	removeReference(*Type)
 
 	ValueType
 }

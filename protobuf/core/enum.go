@@ -42,7 +42,7 @@ type enum struct {
 	label      Label
 	allowAlias Flag
 	fields     map[EnumField]struct{}
-	references map[*_type]struct{}
+	references map[*Type]struct{}
 	parent     DefinitionContainer
 
 	ValueType
@@ -104,14 +104,14 @@ func (e *enum) insertField(f EnumField) error {
 	return nil
 }
 
-func (e *enum) addReference(t *_type) {
+func (e *enum) addReference(t *Type) {
 	if e.references == nil {
-		e.references = make(map[*_type]struct{})
+		e.references = make(map[*Type]struct{})
 	}
 	e.references[t] = struct{}{}
 }
 
-func (e *enum) removeReference(t *_type) {
+func (e *enum) removeReference(t *Type) {
 	delete(e.references, t)
 }
 

@@ -48,10 +48,10 @@ func (f *field) validate() (err error) {
 
 type typedField struct {
 	field
-	_type _type
+	_type Type
 }
 
-func (f *typedField) Type() Type {
+func (f *typedField) Type() *Type {
 	return &f._type
 }
 

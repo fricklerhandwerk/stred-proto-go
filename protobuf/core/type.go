@@ -2,17 +2,21 @@ package core
 
 import "fmt"
 
-type _type struct {
+type Type struct {
 	value  ValueType
 	parent Typed
 }
 
-func (t *_type) Get() ValueType {
+type Typed interface {
+	Type() *Type
+}
+
+func (t *Type) Get() ValueType {
 	return t.value
 
 }
 
-func (t *_type) Set(value ValueType) error {
+func (t *Type) Set(value ValueType) error {
 	old := t.value
 	t.value = value
 	if err := t.validate(); err != nil {
@@ -30,11 +34,11 @@ func (t *_type) Set(value ValueType) error {
 	return nil
 }
 
-func (t *_type) Parent() Typed {
+func (t *Type) Parent() Typed {
 	return t.parent
 }
 
-func (t *_type) validate() error {
+func (t *Type) validate() error {
 	if t.value == nil {
 		return fmt.Errorf("type must not be nil")
 	}
@@ -42,12 +46,12 @@ func (t *_type) validate() error {
 }
 
 type repeatableType struct {
-	_type
+	_type    Type
 	repeated Flag
 	parent   *repeatableField
 }
 
-func (t *repeatableType) Type() Type {
+func (t *repeatableType) Type() *Type {
 	if t._type.parent == nil {
 		t._type.parent = t
 	}
@@ -61,6 +65,10 @@ func (t *repeatableType) Repeated() *Flag {
 	return &t.repeated
 }
 
+func (t *repeatableType) Parent() Field {
+	return t.parent
+}
+
 func (t *repeatableType) validateFlag(f *Flag) error {
 	switch f {
 	case &t.repeated:
@@ -71,8 +79,8 @@ func (t *repeatableType) validateFlag(f *Flag) error {
 	return nil
 }
 
-func (t *repeatableType) Parent() Field {
-	return t.parent
+func (t *repeatableType) validate() error {
+	return t._type.validate()
 }
 
 type keyType string
