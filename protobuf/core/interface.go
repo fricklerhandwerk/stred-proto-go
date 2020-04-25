@@ -101,8 +101,8 @@ type Document interface {
 	Imports() []*Import
 	NewImport() *Import
 
-	Services() []Service
-	NewService() Service
+	Services() []*Service
+	NewService() *Service
 
 	Messages() []Message
 	NewMessage() NewMessage
@@ -112,41 +112,9 @@ type Document interface {
 
 	validateLabel(*Label) error
 	insertImport(*Import) error
-	insertService(*service) error
+	insertService(*Service) error
 	insertMessage(*message) error
 	insertEnum(*enum) error
-}
-
-type TopLevelDeclaration interface {
-	_isDeclaration()
-}
-
-type Service interface {
-	Label() *Label
-
-	RPCs() []RPC
-	NewRPC() RPC
-
-	InsertIntoParent() error
-	Parent() Document
-
-	validate() error
-	hasLabel(*Label) bool
-	validateLabel(*Label) error
-	insertRPC(*rpc) error
-}
-
-type RPC interface {
-	Label() *Label
-
-	Request() MessageType
-	Response() MessageType
-
-	InsertIntoParent() error
-	Parent() Service
-
-	validate() error
-	hasLabel(*Label) bool
 }
 
 type MessageType interface {
@@ -154,7 +122,7 @@ type MessageType interface {
 	Set(Message) error
 	Stream() *Flag
 
-	Parent() RPC
+	Parent() *RPC
 }
 
 type Definition interface {

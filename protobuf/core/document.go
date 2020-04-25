@@ -11,7 +11,7 @@ func NewDocument() Document {
 type document struct {
 	_package Package
 	imports  map[*Import]struct{}
-	services map[*service]struct{}
+	services map[*Service]struct{}
 	messages map[*message]struct{}
 	enums    map[*enum]struct{}
 }
@@ -40,8 +40,8 @@ func (d *document) NewImport() *Import {
 	}
 }
 
-func (d document) Services() (out []Service) {
-	out = make([]Service, len(d.services))
+func (d document) Services() (out []*Service) {
+	out = make([]*Service, len(d.services))
 	i := 0
 	for s := range d.services {
 		out[i] = s
@@ -50,8 +50,8 @@ func (d document) Services() (out []Service) {
 	return
 }
 
-func (d *document) NewService() Service {
-	return &service{
+func (d *document) NewService() *Service {
+	return &Service{
 		parent: d,
 	}
 }
@@ -98,7 +98,7 @@ func (d *document) insertImport(i *Import) (err error) {
 	return nil
 }
 
-func (d *document) insertService(s *service) (err error) {
+func (d *document) insertService(s *Service) (err error) {
 	if _, ok := d.services[s]; ok {
 		return fmt.Errorf("already inserted")
 	}
@@ -190,8 +190,6 @@ type Import struct {
 	parent *document
 	path   Label
 	public *Flag
-
-	TopLevelDeclaration
 }
 
 func (i Import) Path() *Label {

@@ -2,44 +2,44 @@ package core
 
 import "fmt"
 
-type service struct {
+type Service struct {
 	label  Label
-	rpcs   map[*rpc]struct{}
+	rpcs   map[*RPC]struct{}
 	parent *document
 }
 
-func (s *service) Label() *Label {
+func (s *Service) Label() *Label {
 	if s.label.parent == nil {
 		s.label.parent = s
 	}
 	return &s.label
 }
 
-func (s *service) RPCs() (out []RPC) {
-	out = make([]RPC, len(s.rpcs))
+func (s *Service) RPCs() (out []*RPC) {
+	out = make([]*RPC, len(s.rpcs))
 	for r := range s.rpcs {
 		out = append(out, r)
 	}
 	return
 }
 
-func (s *service) NewRPC() RPC {
+func (s *Service) NewRPC() *RPC {
 	panic("not implemented")
 }
 
-func (s *service) InsertIntoParent() error {
+func (s *Service) InsertIntoParent() error {
 	return s.parent.insertService(s)
 }
 
-func (s *service) Parent() Document {
+func (s *Service) Parent() Document {
 	return s.parent
 }
 
-func (s *service) hasLabel(l *Label) bool {
+func (s *Service) hasLabel(l *Label) bool {
 	return s.label.hasLabel(l)
 }
 
-func (s *service) insertRPC(r *rpc) error {
+func (s *Service) insertRPC(r *RPC) error {
 	if _, ok := s.rpcs[r]; ok {
 		return fmt.Errorf("already inserted")
 	}
@@ -50,7 +50,7 @@ func (s *service) insertRPC(r *rpc) error {
 	return nil
 }
 
-func (s *service) validate() error {
+func (s *Service) validate() error {
 	if s.label.value == "" {
 		return fmt.Errorf("label not set")
 	}
@@ -65,7 +65,7 @@ func (s *service) validate() error {
 	return nil
 }
 
-func (s *service) validateLabel(l *Label) error {
+func (s *Service) validateLabel(l *Label) error {
 	// TODO: rpc labels and rpc argument/return types share a namespace with
 	// *unqualified* message/enum labels within a service. you can only have "rpc
 	// Foo" and use "message Foo" as an argument/return type in one of the same
@@ -85,37 +85,37 @@ func (s *service) validateLabel(l *Label) error {
 	return nil
 }
 
-type rpc struct {
+type RPC struct {
 	label    Label
 	request  MessageType
 	response MessageType
-	parent   *service
+	parent   *Service
 }
 
-func (r *rpc) Label() *Label {
+func (r *RPC) Label() *Label {
 	return &r.label
 }
 
-func (r *rpc) Request() MessageType {
+func (r *RPC) Request() MessageType {
 	return r.request
 }
 
-func (r *rpc) Response() MessageType {
+func (r *RPC) Response() MessageType {
 	return r.response
 }
 
-func (r *rpc) InsertIntoParent() error {
+func (r *RPC) InsertIntoParent() error {
 	return r.parent.insertRPC(r)
 }
 
-func (r *rpc) Parent() Service {
+func (r *RPC) Parent() *Service {
 	return r.parent
 }
 
-func (r *rpc) hasLabel(*Label) bool {
+func (r *RPC) hasLabel(*Label) bool {
 	panic("not implemented")
 }
 
-func (r *rpc) validate() error {
+func (r *RPC) validate() error {
 	panic("not implemented")
 }
