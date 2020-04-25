@@ -13,6 +13,10 @@ type Numbered interface {
 	validateNumber(FieldNumber) error
 }
 
+type FieldNumber interface {
+	intersects(FieldNumber) bool
+}
+
 func (n Number) Get() *uint {
 	if n.value == nil {
 		return nil

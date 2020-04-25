@@ -292,7 +292,7 @@ type Enum interface {
 
 	Fields() []EnumField
 
-	NewVariant() Variant
+	NewVariant() *Variant
 	NewReservedNumber() ReservedNumber
 	NewReservedRange() ReservedRange
 	NewReservedLabel() ReservedLabel
@@ -315,19 +315,4 @@ type EnumField interface {
 	validateAsEnumField() error
 	hasLabel(*Label) bool
 	hasNumber(FieldNumber) bool
-}
-
-type Variant interface {
-	Label() *Label
-	Number() *Number
-	Deprecated() *Flag
-
-	InsertIntoParent() error
-	Parent() Enum
-
-	EnumField
-}
-
-type FieldNumber interface {
-	intersects(FieldNumber) bool
 }

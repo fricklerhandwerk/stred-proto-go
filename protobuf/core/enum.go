@@ -61,7 +61,7 @@ func (e enum) validateFlag(*Flag) error {
 	numbers := make(map[uint]bool, len(e.fields))
 	for field := range e.fields {
 		switch f := field.(type) {
-		case *variant:
+		case *Variant:
 			n := *f.number.value
 			if numbers[n] {
 				// TODO: return error type with references to aliased fields
@@ -115,8 +115,8 @@ func (e *enum) removeReference(t *Type) {
 	delete(e.references, t)
 }
 
-func (e *enum) NewVariant() Variant {
-	v := &variant{parent: e}
+func (e *enum) NewVariant() *Variant {
+	v := &Variant{parent: e}
 	v.field.label.parent = v
 	v.field.number.parent = v
 	v.field.deprecated.parent = v
@@ -168,11 +168,11 @@ func (e enum) validateNumber(n FieldNumber) error {
 	for f := range e.fields {
 		if f.hasNumber(n) {
 			switch f.(type) {
-			case *variant:
+			case *Variant:
 				switch n := n.(type) {
 				case *Number:
 					switch n.parent.(type) {
-					case *variant:
+					case *Variant:
 						if e.allowAlias.value {
 							return nil
 						}
@@ -208,13 +208,13 @@ func (e *enum) validate() (err error) {
 	return e.parent.validateLabel(&e.label)
 }
 
-type variant struct {
+type Variant struct {
 	field
 	parent *enum
 }
 
-func (v *variant) InsertIntoParent() error {
-	vv := &variant{
+func (v *Variant) InsertIntoParent() error {
+	vv := &Variant{
 		field:  v.field,
 		parent: v.parent,
 	}
@@ -224,22 +224,22 @@ func (v *variant) InsertIntoParent() error {
 	return v.parent.insertField(vv)
 }
 
-func (v variant) Parent() Enum {
+func (v Variant) Parent() Enum {
 	return v.parent
 }
 
-func (v *variant) validateAsEnumField() (err error) {
+func (v *Variant) validateAsEnumField() (err error) {
 	return v.field.validate()
 }
 
-func (v variant) validateLabel(l *Label) error {
+func (v Variant) validateLabel(l *Label) error {
 	return v.parent.validateLabel(l)
 }
 
-func (v variant) validateNumber(n FieldNumber) error {
+func (v Variant) validateNumber(n FieldNumber) error {
 	return v.parent.validateNumber(n)
 }
 
-func (v variant) validateFlag(f *Flag) error {
+func (v Variant) validateFlag(f *Flag) error {
 	return v.parent.validateFlag(f)
 }
