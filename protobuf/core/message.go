@@ -5,19 +5,19 @@ import (
 	"fmt"
 )
 
-type newMessage struct {
+type NewMessage struct {
 	label  Label
 	parent DefinitionContainer
 }
 
-func (m *newMessage) Label() *Label {
+func (m *NewMessage) Label() *Label {
 	if m.label.parent == nil {
 		m.label.parent = m
 	}
 	return &m.label
 }
 
-func (m *newMessage) InsertIntoParent() error {
+func (m *NewMessage) InsertIntoParent() error {
 	mm := &message{
 		parent: m.parent,
 		label: Label{
@@ -28,11 +28,11 @@ func (m *newMessage) InsertIntoParent() error {
 	return m.parent.insertMessage(mm)
 }
 
-func (m *newMessage) Parent() DefinitionContainer {
+func (m *NewMessage) Parent() DefinitionContainer {
 	return m.parent
 }
 
-func (m *newMessage) validateLabel(l *Label) error {
+func (m *NewMessage) validateLabel(l *Label) error {
 	return m.parent.validateLabel(l)
 }
 
@@ -165,8 +165,8 @@ func (m *message) NewReservedLabel() ReservedLabel {
 	return l
 }
 
-func (m *message) NewMessage() NewMessage {
-	return &newMessage{parent: m}
+func (m *message) NewMessage() *NewMessage {
+	return &NewMessage{parent: m}
 }
 
 func (m *message) NewEnum() NewEnum {

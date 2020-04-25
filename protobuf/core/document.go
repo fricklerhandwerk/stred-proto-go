@@ -66,8 +66,8 @@ func (d document) Messages() (out []Message) {
 	return
 }
 
-func (d *document) NewMessage() NewMessage {
-	return &newMessage{parent: d}
+func (d *document) NewMessage() *NewMessage {
+	return &NewMessage{parent: d}
 }
 
 func (d document) Enums() (out []Enum) {

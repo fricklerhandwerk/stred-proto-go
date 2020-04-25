@@ -105,7 +105,7 @@ type Document interface {
 	NewService() *Service
 
 	Messages() []Message
-	NewMessage() NewMessage
+	NewMessage() *NewMessage
 
 	Enums() []Enum
 	NewEnum() NewEnum
@@ -145,7 +145,7 @@ type Definition interface {
 
 type DefinitionContainer interface {
 	Messages() []Message
-	NewMessage() NewMessage
+	NewMessage() *NewMessage
 
 	Enums() []Enum
 	NewEnum() NewEnum
@@ -153,13 +153,6 @@ type DefinitionContainer interface {
 	validateLabel(*Label) error
 	insertMessage(*message) error
 	insertEnum(*enum) error
-}
-
-type NewMessage interface {
-	Label() *Label
-
-	InsertIntoParent() error
-	Parent() DefinitionContainer
 }
 
 type Message interface {
@@ -174,7 +167,7 @@ type Message interface {
 	NewReservedLabel() ReservedLabel
 
 	Messages() []Message
-	NewMessage() NewMessage
+	NewMessage() *NewMessage
 
 	Enums() []Enum
 	NewEnum() NewEnum
