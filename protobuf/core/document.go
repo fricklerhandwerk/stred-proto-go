@@ -10,7 +10,7 @@ func NewDocument() Document {
 
 type document struct {
 	_package _package
-	imports  map[*_import]struct{}
+	imports  map[*Import]struct{}
 	services map[*service]struct{}
 	messages map[*message]struct{}
 	enums    map[*enum]struct{}
@@ -24,8 +24,8 @@ func (d *document) Package() Package {
 	return &d._package
 }
 
-func (d document) Imports() []Import {
-	out := make([]Import, len(d.imports))
+func (d document) Imports() []*Import {
+	out := make([]*Import, len(d.imports))
 	j := 0
 	for i := range d.imports {
 		out[j] = i
@@ -34,8 +34,8 @@ func (d document) Imports() []Import {
 	return out
 }
 
-func (d *document) NewImport() Import {
-	return &_import{
+func (d *document) NewImport() *Import {
+	return &Import{
 		parent: d,
 	}
 }
@@ -84,9 +84,9 @@ func (d *document) NewEnum() NewEnum {
 	return &newEnum{parent: d}
 }
 
-func (d *document) insertImport(i *_import) (err error) {
+func (d *document) insertImport(i *Import) (err error) {
 	if d.imports == nil {
-		d.imports = make(map[*_import]struct{})
+		d.imports = make(map[*Import]struct{})
 	}
 	if _, ok := d.imports[i]; ok {
 		return fmt.Errorf("already inserted")
@@ -186,7 +186,7 @@ func (p *_package) validateLabel(l *Label) error {
 	return nil
 }
 
-type _import struct {
+type Import struct {
 	parent *document
 	path   Label
 	public *Flag
@@ -194,22 +194,22 @@ type _import struct {
 	TopLevelDeclaration
 }
 
-func (i _import) Path() *Label {
+func (i Import) Path() *Label {
 	return &i.path
 }
 
-func (i _import) Public() *Flag {
+func (i Import) Public() *Flag {
 	return i.public
 }
 
-func (i *_import) InsertIntoParent() error {
+func (i *Import) InsertIntoParent() error {
 	return i.parent.insertImport(i)
 }
 
-func (i _import) Parent() Document {
+func (i Import) Parent() Document {
 	return i.parent
 }
 
-func (i _import) validate() error {
+func (i Import) validate() error {
 	return i.parent.validateLabel(&i.path)
 }

@@ -98,8 +98,8 @@ type MapKeyType interface {
 type Document interface {
 	Package() Package
 
-	Imports() []Import
-	NewImport() Import
+	Imports() []*Import
+	NewImport() *Import
 
 	Services() []Service
 	NewService() Service
@@ -111,7 +111,7 @@ type Document interface {
 	NewEnum() NewEnum
 
 	validateLabel(*Label) error
-	insertImport(*_import) error
+	insertImport(*Import) error
 	insertService(*service) error
 	insertMessage(*message) error
 	insertEnum(*enum) error
@@ -127,16 +127,6 @@ type Package interface {
 
 type TopLevelDeclaration interface {
 	_isDeclaration()
-}
-
-type Import interface {
-	Path() *Label
-	Public() *Flag
-
-	InsertIntoParent() error
-	Parent() Document
-
-	validate() error
 }
 
 type Service interface {
