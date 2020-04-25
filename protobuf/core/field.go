@@ -7,7 +7,7 @@ import (
 type field struct {
 	label      Label
 	number     Number
-	deprecated flag
+	deprecated Flag
 }
 
 func (f *field) Label() *Label {
@@ -18,7 +18,7 @@ func (f *field) Number() *Number {
 	return &f.number
 }
 
-func (f *field) Deprecated() Flag {
+func (f *field) Deprecated() *Flag {
 	return &f.deprecated
 }
 

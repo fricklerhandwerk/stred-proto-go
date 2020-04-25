@@ -43,7 +43,7 @@ func (t *_type) validate() error {
 
 type repeatableType struct {
 	_type
-	repeated flag
+	repeated Flag
 	parent   *repeatableField
 }
 
@@ -54,14 +54,14 @@ func (t *repeatableType) Type() Type {
 	return &t._type
 }
 
-func (t *repeatableType) Repeated() Flag {
+func (t *repeatableType) Repeated() *Flag {
 	if t.repeated.parent == nil {
 		t.repeated.parent = t
 	}
 	return &t.repeated
 }
 
-func (t *repeatableType) validateFlag(f *flag) error {
+func (t *repeatableType) validateFlag(f *Flag) error {
 	switch f {
 	case &t.repeated:
 		// TODO: if we ever have "safe mode" to prevent backwards-incompatible

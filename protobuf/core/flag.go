@@ -1,15 +1,15 @@
 package core
 
-type flag struct {
+type Flag struct {
 	value  bool
 	parent Flagged
 }
 
-func (f flag) Get() bool {
+func (f Flag) Get() bool {
 	return f.value
 }
 
-func (f *flag) Set(value bool) error {
+func (f *Flag) Set(value bool) error {
 	old := f.value
 	f.value = value
 	if err := f.parent.validateFlag(f); err != nil {
@@ -19,10 +19,10 @@ func (f *flag) Set(value bool) error {
 	return nil
 }
 
-func (f flag) Parent() Flagged {
+func (f Flag) Parent() Flagged {
 	return f.parent
 }
 
 type Flagged interface {
-	validateFlag(*flag) error
+	validateFlag(*Flag) error
 }

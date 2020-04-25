@@ -189,7 +189,7 @@ func (p *_package) validateLabel(l *Label) error {
 type _import struct {
 	parent *document
 	path   Label
-	public Flag
+	public *Flag
 
 	TopLevelDeclaration
 }
@@ -198,7 +198,7 @@ func (i _import) Path() *Label {
 	return &i.path
 }
 
-func (i _import) Public() Flag {
+func (i _import) Public() *Flag {
 	return i.public
 }
 

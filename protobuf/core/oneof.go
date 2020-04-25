@@ -126,6 +126,6 @@ func (f oneOfField) validateNumber(n FieldNumber) error {
 	return f.parent.validateNumber(n)
 }
 
-func (f oneOfField) validateFlag(*flag) error {
+func (f oneOfField) validateFlag(*Flag) error {
 	return nil
 }

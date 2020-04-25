@@ -64,13 +64,6 @@ package core
 // will always return values or non-nil interfaces, as they have necessarily
 // been validated prior.
 
-type Flag interface {
-	Get() bool
-	Set(bool) error
-
-	Parent() Flagged
-}
-
 type Type interface {
 	Get() ValueType
 	Set(ValueType) error
@@ -85,7 +78,7 @@ type Typed interface {
 type RepeatableType interface {
 	Get() ValueType
 	Set(ValueType) error
-	Repeated() Flag
+	Repeated() *Flag
 
 	Parent() Field
 }
@@ -149,7 +142,7 @@ type TopLevelDeclaration interface {
 
 type Import interface {
 	Path() *Label
-	Public() Flag
+	Public() *Flag
 
 	InsertIntoParent() error
 	Parent() Document
@@ -188,7 +181,7 @@ type RPC interface {
 type MessageType interface {
 	Get() Message
 	Set(Message) error
-	Stream() Flag
+	Stream() *Flag
 
 	Parent() RPC
 }
@@ -264,9 +257,9 @@ type Message interface {
 type Field interface {
 	Label() *Label
 	Number() *Number
-	Deprecated() Flag
+	Deprecated() *Flag
 	Type() Type
-	Repeated() Flag
+	Repeated() *Flag
 
 	InsertIntoParent() error
 	Parent() Message
@@ -277,7 +270,7 @@ type Field interface {
 type Map interface {
 	Label() *Label
 	Number() *Number
-	Deprecated() Flag
+	Deprecated() *Flag
 	KeyType() KeyType
 	Type() Type
 
@@ -303,7 +296,7 @@ type OneOfField interface {
 	Label() *Label
 	Number() *Number
 	Type() Type
-	Deprecated() Flag
+	Deprecated() *Flag
 
 	InsertIntoParent() error
 	Parent() OneOf
@@ -370,7 +363,7 @@ type NewEnum interface {
 
 type Enum interface {
 	Label() *Label
-	AllowAlias() Flag
+	AllowAlias() *Flag
 
 	Fields() []EnumField
 
@@ -402,7 +395,7 @@ type EnumField interface {
 type Variant interface {
 	Label() *Label
 	Number() *Number
-	Deprecated() Flag
+	Deprecated() *Flag
 
 	InsertIntoParent() error
 	Parent() Enum

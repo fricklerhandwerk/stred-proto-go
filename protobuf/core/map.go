@@ -63,6 +63,6 @@ func (m *mapField) validateNumber(n FieldNumber) error {
 	return m.parent.validateNumber(n)
 }
 
-func (m *mapField) validateFlag(*flag) error {
+func (m *mapField) validateFlag(*Flag) error {
 	return nil
 }

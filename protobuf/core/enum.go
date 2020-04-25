@@ -40,7 +40,7 @@ func (e newEnum) validateLabel(l *Label) error {
 
 type enum struct {
 	label      Label
-	allowAlias flag
+	allowAlias Flag
 	fields     map[EnumField]struct{}
 	references map[*_type]struct{}
 	parent     DefinitionContainer
@@ -52,11 +52,11 @@ func (e *enum) Label() *Label {
 	return &e.label
 }
 
-func (e *enum) AllowAlias() Flag {
+func (e *enum) AllowAlias() *Flag {
 	return &e.allowAlias
 }
 
-func (e enum) validateFlag(*flag) error {
+func (e enum) validateFlag(*Flag) error {
 	// check if aliasing is in place
 	numbers := make(map[uint]bool, len(e.fields))
 	for field := range e.fields {
@@ -240,6 +240,6 @@ func (v variant) validateNumber(n FieldNumber) error {
 	return v.parent.validateNumber(n)
 }
 
-func (v variant) validateFlag(f *flag) error {
+func (v variant) validateFlag(f *Flag) error {
 	return v.parent.validateFlag(f)
 }
