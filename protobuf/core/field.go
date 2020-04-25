@@ -6,7 +6,7 @@ import (
 
 type field struct {
 	label      label
-	number     number
+	number     Number
 	deprecated flag
 }
 
@@ -14,7 +14,7 @@ func (f *field) Label() Identifier {
 	return &f.label
 }
 
-func (f *field) Number() Number {
+func (f *field) Number() *Number {
 	return &f.number
 }
 

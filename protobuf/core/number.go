@@ -4,12 +4,16 @@ import (
 	"fmt"
 )
 
-type number struct {
+type Number struct {
 	value  *uint
 	parent Numbered
 }
 
-func (n number) Get() *uint {
+type Numbered interface {
+	validateNumber(FieldNumber) error
+}
+
+func (n Number) Get() *uint {
 	if n.value == nil {
 		return nil
 	}
@@ -17,7 +21,7 @@ func (n number) Get() *uint {
 	return &out
 }
 
-func (n *number) Set(value uint) (err error) {
+func (n *Number) Set(value uint) (err error) {
 	if n.value == nil {
 		n.value = &value
 		defer func() {
@@ -37,24 +41,24 @@ func (n *number) Set(value uint) (err error) {
 	return n.validate()
 }
 
-func (n *number) validate() error {
+func (n *Number) validate() error {
 	if n.value == nil {
 		return fmt.Errorf("number not set")
 	}
 	return n.parent.validateNumber(n)
 }
 
-func (n number) Parent() Numbered {
+func (n Number) Parent() Numbered {
 	return n.parent
 }
 
-func (n *number) hasNumber(other FieldNumber) bool {
+func (n *Number) hasNumber(other FieldNumber) bool {
 	return n != other && n.intersects(other)
 }
 
-func (n *number) intersects(other FieldNumber) bool {
+func (n *Number) intersects(other FieldNumber) bool {
 	switch o := other.(type) {
-	case *number:
+	case *Number:
 		return *n.value == *o.value
 	case *reservedRange:
 		return *n.value >= *o.start.value && *n.value <= *o.end.value

@@ -170,7 +170,7 @@ func (e enum) validateNumber(n FieldNumber) error {
 			switch f.(type) {
 			case *variant:
 				switch n := n.(type) {
-				case *number:
+				case *Number:
 					switch n.parent.(type) {
 					case *variant:
 						if e.allowAlias.value {
@@ -188,7 +188,7 @@ func (e enum) validateNumber(n FieldNumber) error {
 			// verbose
 			var source string
 			switch v := n.(type) {
-			case *number:
+			case *Number:
 				source = fmt.Sprintf("field number %d", *v.value)
 			case *reservedRange:
 				source = fmt.Sprintf("range %d to %d", *v.start.value, *v.end.value)

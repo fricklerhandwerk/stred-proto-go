@@ -78,21 +78,6 @@ type Labelled interface {
 	validateLabel(*label) error
 }
 
-type Number interface {
-	Get() *uint
-	Set(uint) error
-
-	Parent() Numbered
-
-	// TODO: self-validate
-	//validate() error
-	FieldNumber
-}
-
-type Numbered interface {
-	validateNumber(FieldNumber) error
-}
-
 type Flag interface {
 	Get() bool
 	Set(bool) error
@@ -292,7 +277,7 @@ type Message interface {
 
 type Field interface {
 	Label() Identifier
-	Number() Number
+	Number() *Number
 	Deprecated() Flag
 	Type() Type
 	Repeated() Flag
@@ -305,7 +290,7 @@ type Field interface {
 
 type Map interface {
 	Label() Identifier
-	Number() Number
+	Number() *Number
 	Deprecated() Flag
 	KeyType() KeyType
 	Type() Type
@@ -330,7 +315,7 @@ type OneOf interface {
 
 type OneOfField interface {
 	Label() Identifier
-	Number() Number
+	Number() *Number
 	Type() Type
 	Deprecated() Flag
 
@@ -339,8 +324,8 @@ type OneOfField interface {
 }
 
 type ReservedRange interface {
-	Start() Number
-	End() Number
+	Start() *Number
+	End() *Number
 
 	InsertIntoParent() error
 	Parent() Definition
@@ -430,7 +415,7 @@ type EnumField interface {
 
 type Variant interface {
 	Label() Identifier
-	Number() Number
+	Number() *Number
 	Deprecated() Flag
 
 	InsertIntoParent() error

@@ -6,7 +6,7 @@ import (
 )
 
 type reservedNumber struct {
-	number
+	number Number
 	parent Definition
 }
 
@@ -19,6 +19,13 @@ func (r *reservedNumber) InsertIntoParent() error {
 	default:
 		panic(fmt.Sprintf("unhandled parent type %T", p))
 	}
+}
+
+func (r reservedNumber) Get() *uint {
+	return r.number.Get()
+}
+func (r *reservedNumber) Set(value uint) error {
+	return r.number.Set(value)
 }
 
 func (r reservedNumber) Parent() Definition {
@@ -41,20 +48,28 @@ func (r reservedNumber) hasLabel(l *label) bool {
 	return false
 }
 
+func (r *reservedNumber) hasNumber(n FieldNumber) bool {
+	return r.number.hasNumber(n)
+}
+
+func (r reservedNumber) intersects(other FieldNumber) bool {
+	return r.number.intersects(other)
+}
+
 type reservedRange struct {
-	start  number
-	end    number
+	start  Number
+	end    Number
 	parent Definition
 }
 
-func (r *reservedRange) Start() Number {
+func (r *reservedRange) Start() *Number {
 	if r.start.parent == nil {
 		r.start.parent = r
 	}
 	return &r.start
 }
 
-func (r *reservedRange) End() Number {
+func (r *reservedRange) End() *Number {
 	if r.end.parent == nil {
 		r.end.parent = r
 	}
@@ -82,7 +97,7 @@ func (r *reservedRange) hasNumber(other FieldNumber) bool {
 
 func (r *reservedRange) intersects(other FieldNumber) bool {
 	switch o := other.(type) {
-	case *number:
+	case *Number:
 		return o.intersects(r)
 	case *reservedRange:
 		return o.start.intersects(r) || o.end.intersects(r)
