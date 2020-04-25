@@ -4,11 +4,11 @@ import (
 	"fmt"
 )
 
-func NewDocument() Document {
-	return &document{}
+func NewDocument() *Document {
+	return &Document{}
 }
 
-type document struct {
+type Document struct {
 	_package Package
 	imports  map[*Import]struct{}
 	services map[*Service]struct{}
@@ -16,7 +16,7 @@ type document struct {
 	enums    map[*enum]struct{}
 }
 
-func (d *document) Package() *Package {
+func (d *Document) Package() *Package {
 	if d._package.parent == nil {
 		d._package.parent = d
 		d._package.label.parent = &d._package
@@ -24,7 +24,7 @@ func (d *document) Package() *Package {
 	return &d._package
 }
 
-func (d document) Imports() []*Import {
+func (d Document) Imports() []*Import {
 	out := make([]*Import, len(d.imports))
 	j := 0
 	for i := range d.imports {
@@ -34,13 +34,13 @@ func (d document) Imports() []*Import {
 	return out
 }
 
-func (d *document) NewImport() *Import {
+func (d *Document) NewImport() *Import {
 	return &Import{
 		parent: d,
 	}
 }
 
-func (d document) Services() (out []*Service) {
+func (d Document) Services() (out []*Service) {
 	out = make([]*Service, len(d.services))
 	i := 0
 	for s := range d.services {
@@ -50,13 +50,13 @@ func (d document) Services() (out []*Service) {
 	return
 }
 
-func (d *document) NewService() *Service {
+func (d *Document) NewService() *Service {
 	return &Service{
 		parent: d,
 	}
 }
 
-func (d document) Messages() (out []Message) {
+func (d Document) Messages() (out []Message) {
 	out = make([]Message, len(d.messages))
 	i := 0
 	for m := range d.messages {
@@ -66,11 +66,11 @@ func (d document) Messages() (out []Message) {
 	return
 }
 
-func (d *document) NewMessage() *NewMessage {
+func (d *Document) NewMessage() *NewMessage {
 	return &NewMessage{parent: d}
 }
 
-func (d document) Enums() (out []Enum) {
+func (d Document) Enums() (out []Enum) {
 	out = make([]Enum, len(d.enums))
 	i := 0
 	for e := range d.enums {
@@ -80,11 +80,11 @@ func (d document) Enums() (out []Enum) {
 	return
 }
 
-func (d *document) NewEnum() *NewEnum {
+func (d *Document) NewEnum() *NewEnum {
 	return &NewEnum{parent: d}
 }
 
-func (d *document) insertImport(i *Import) (err error) {
+func (d *Document) insertImport(i *Import) (err error) {
 	if d.imports == nil {
 		d.imports = make(map[*Import]struct{})
 	}
@@ -98,7 +98,7 @@ func (d *document) insertImport(i *Import) (err error) {
 	return nil
 }
 
-func (d *document) insertService(s *Service) (err error) {
+func (d *Document) insertService(s *Service) (err error) {
 	if _, ok := d.services[s]; ok {
 		return fmt.Errorf("already inserted")
 	}
@@ -109,7 +109,7 @@ func (d *document) insertService(s *Service) (err error) {
 	return nil
 }
 
-func (d *document) insertMessage(m *message) (err error) {
+func (d *Document) insertMessage(m *message) (err error) {
 	if d.messages == nil {
 		d.messages = make(map[*message]struct{})
 	}
@@ -123,7 +123,7 @@ func (d *document) insertMessage(m *message) (err error) {
 	return nil
 }
 
-func (d *document) insertEnum(e *enum) (err error) {
+func (d *Document) insertEnum(e *enum) (err error) {
 	if d.enums == nil {
 		d.enums = make(map[*enum]struct{})
 	}
@@ -137,7 +137,7 @@ func (d *document) insertEnum(e *enum) (err error) {
 	return nil
 }
 
-func (d document) validateLabel(l *Label) error {
+func (d Document) validateLabel(l *Label) error {
 	for s := range d.services {
 		if s.hasLabel(l) {
 			// TODO: return error type which contains other declaration
@@ -161,7 +161,7 @@ func (d document) validateLabel(l *Label) error {
 
 type Package struct {
 	label  Label
-	parent *document
+	parent *Document
 }
 
 func (p Package) Get() string {
@@ -178,7 +178,7 @@ func (p *Package) Unset() error {
 	return nil
 }
 
-func (p *Package) Parent() Document {
+func (p *Package) Parent() *Document {
 	return p.parent
 }
 
@@ -187,7 +187,7 @@ func (p *Package) validateLabel(l *Label) error {
 }
 
 type Import struct {
-	parent *document
+	parent *Document
 	path   Label
 	public *Flag
 }
@@ -204,7 +204,7 @@ func (i *Import) InsertIntoParent() error {
 	return i.parent.insertImport(i)
 }
 
-func (i Import) Parent() Document {
+func (i Import) Parent() *Document {
 	return i.parent
 }
 

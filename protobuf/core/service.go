@@ -5,7 +5,7 @@ import "fmt"
 type Service struct {
 	label  Label
 	rpcs   map[*RPC]struct{}
-	parent *document
+	parent *Document
 }
 
 func (s *Service) Label() *Label {
@@ -31,7 +31,7 @@ func (s *Service) InsertIntoParent() error {
 	return s.parent.insertService(s)
 }
 
-func (s *Service) Parent() Document {
+func (s *Service) Parent() *Document {
 	return s.parent
 }
 

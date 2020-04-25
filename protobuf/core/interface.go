@@ -71,28 +71,6 @@ type KeyType interface {
 	Parent() Map
 }
 
-type Document interface {
-	Package() *Package
-
-	Imports() []*Import
-	NewImport() *Import
-
-	Services() []*Service
-	NewService() *Service
-
-	Messages() []Message
-	NewMessage() *NewMessage
-
-	Enums() []Enum
-	NewEnum() *NewEnum
-
-	validateLabel(*Label) error
-	insertImport(*Import) error
-	insertService(*Service) error
-	insertMessage(*message) error
-	insertEnum(*enum) error
-}
-
 type MessageType interface {
 	Get() Message
 	Set(Message) error
