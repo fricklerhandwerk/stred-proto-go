@@ -64,20 +64,6 @@ package core
 // will always return values or non-nil interfaces, as they have necessarily
 // been validated prior.
 
-type Identifier interface {
-	Get() string
-	Set(string) error
-
-	Parent() Labelled
-
-	// TODO: self-validate
-	//validate() error
-}
-
-type Labelled interface {
-	validateLabel(*label) error
-}
-
 type Flag interface {
 	Get() bool
 	Set(bool) error
@@ -142,7 +128,7 @@ type Document interface {
 	Enums() []Enum
 	NewEnum() NewEnum
 
-	validateLabel(*label) error
+	validateLabel(*Label) error
 	insertImport(*_import) error
 	insertService(*service) error
 	insertMessage(*message) error
@@ -162,7 +148,7 @@ type TopLevelDeclaration interface {
 }
 
 type Import interface {
-	Path() Identifier
+	Path() *Label
 	Public() Flag
 
 	InsertIntoParent() error
@@ -172,7 +158,7 @@ type Import interface {
 }
 
 type Service interface {
-	Label() Identifier
+	Label() *Label
 
 	RPCs() []RPC
 	NewRPC() RPC
@@ -181,13 +167,13 @@ type Service interface {
 	Parent() Document
 
 	validate() error
-	hasLabel(*label) bool
-	validateLabel(*label) error
+	hasLabel(*Label) bool
+	validateLabel(*Label) error
 	insertRPC(*rpc) error
 }
 
 type RPC interface {
-	Label() Identifier
+	Label() *Label
 
 	Request() MessageType
 	Response() MessageType
@@ -196,7 +182,7 @@ type RPC interface {
 	Parent() Service
 
 	validate() error
-	hasLabel(*label) bool
+	hasLabel(*Label) bool
 }
 
 type MessageType interface {
@@ -208,7 +194,7 @@ type MessageType interface {
 }
 
 type Definition interface {
-	Label() Identifier
+	Label() *Label
 
 	NewReservedNumber() ReservedNumber
 	NewReservedRange() ReservedRange
@@ -217,8 +203,8 @@ type Definition interface {
 	Parent() DefinitionContainer
 
 	validate() error
-	hasLabel(*label) bool
-	validateLabel(*label) error
+	hasLabel(*Label) bool
+	validateLabel(*Label) error
 	validateNumber(FieldNumber) error
 
 	addReference(*_type)
@@ -232,20 +218,20 @@ type DefinitionContainer interface {
 	Enums() []Enum
 	NewEnum() NewEnum
 
-	validateLabel(*label) error
+	validateLabel(*Label) error
 	insertMessage(*message) error
 	insertEnum(*enum) error
 }
 
 type NewMessage interface {
-	Label() Identifier
+	Label() *Label
 
 	InsertIntoParent() error
 	Parent() DefinitionContainer
 }
 
 type Message interface {
-	Label() Identifier
+	Label() *Label
 	Fields() []MessageField
 
 	NewField() Field
@@ -264,8 +250,8 @@ type Message interface {
 	Parent() DefinitionContainer
 
 	validate() error
-	hasLabel(*label) bool
-	validateLabel(*label) error
+	hasLabel(*Label) bool
+	validateLabel(*Label) error
 	validateNumber(FieldNumber) error
 	insertField(MessageField) error
 
@@ -276,7 +262,7 @@ type Message interface {
 }
 
 type Field interface {
-	Label() Identifier
+	Label() *Label
 	Number() *Number
 	Deprecated() Flag
 	Type() Type
@@ -289,7 +275,7 @@ type Field interface {
 }
 
 type Map interface {
-	Label() Identifier
+	Label() *Label
 	Number() *Number
 	Deprecated() Flag
 	KeyType() KeyType
@@ -302,7 +288,7 @@ type Map interface {
 }
 
 type OneOf interface {
-	Label() Identifier
+	Label() *Label
 
 	Fields() []OneOfField
 	NewField() OneOfField
@@ -314,7 +300,7 @@ type OneOf interface {
 }
 
 type OneOfField interface {
-	Label() Identifier
+	Label() *Label
 	Number() *Number
 	Type() Type
 	Deprecated() Flag
@@ -337,7 +323,7 @@ type ReservedRange interface {
 
 	validateAsMessageField() error
 	validateAsEnumField() error
-	hasLabel(*label) bool
+	hasLabel(*Label) bool
 	hasNumber(FieldNumber) bool
 }
 
@@ -352,7 +338,7 @@ type ReservedNumber interface {
 
 	validateAsMessageField() error
 	validateAsEnumField() error
-	hasLabel(*label) bool
+	hasLabel(*Label) bool
 	hasNumber(FieldNumber) bool
 }
 
@@ -365,25 +351,25 @@ type ReservedLabel interface {
 
 	validateAsMessageField() error
 	validateAsEnumField() error
-	hasLabel(*label) bool
+	hasLabel(*Label) bool
 	hasNumber(FieldNumber) bool
 }
 
 type MessageField interface {
 	validateAsMessageField() error
-	hasLabel(*label) bool
+	hasLabel(*Label) bool
 	hasNumber(FieldNumber) bool
 }
 
 type NewEnum interface {
-	Label() Identifier
+	Label() *Label
 
 	InsertIntoParent() error
 	Parent() DefinitionContainer
 }
 
 type Enum interface {
-	Label() Identifier
+	Label() *Label
 	AllowAlias() Flag
 
 	Fields() []EnumField
@@ -396,8 +382,8 @@ type Enum interface {
 	Parent() DefinitionContainer
 
 	validate() error
-	hasLabel(*label) bool
-	validateLabel(*label) error
+	hasLabel(*Label) bool
+	validateLabel(*Label) error
 	validateNumber(FieldNumber) error
 	insertField(EnumField) error
 
@@ -409,12 +395,12 @@ type Enum interface {
 
 type EnumField interface {
 	validateAsEnumField() error
-	hasLabel(*label) bool
+	hasLabel(*Label) bool
 	hasNumber(FieldNumber) bool
 }
 
 type Variant interface {
-	Label() Identifier
+	Label() *Label
 	Number() *Number
 	Deprecated() Flag
 

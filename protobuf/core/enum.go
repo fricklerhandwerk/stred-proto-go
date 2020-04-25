@@ -7,14 +7,14 @@ import (
 )
 
 type newEnum struct {
-	label  label
+	label  Label
 	parent DefinitionContainer
 }
 
 func (e *newEnum) InsertIntoParent() error {
 	ee := &enum{
 		parent: e.parent,
-		label: label{
+		label: Label{
 			value: e.label.Get(),
 		},
 	}
@@ -23,7 +23,7 @@ func (e *newEnum) InsertIntoParent() error {
 	return e.parent.insertEnum(ee)
 }
 
-func (e *newEnum) Label() Identifier {
+func (e *newEnum) Label() *Label {
 	if e.label.parent == nil {
 		e.label.parent = e
 	}
@@ -34,12 +34,12 @@ func (e newEnum) Parent() DefinitionContainer {
 	return e.parent
 }
 
-func (e newEnum) validateLabel(l *label) error {
+func (e newEnum) validateLabel(l *Label) error {
 	return e.parent.validateLabel(l)
 }
 
 type enum struct {
-	label      label
+	label      Label
 	allowAlias flag
 	fields     map[EnumField]struct{}
 	references map[*_type]struct{}
@@ -48,7 +48,7 @@ type enum struct {
 	ValueType
 }
 
-func (e *enum) Label() Identifier {
+func (e *enum) Label() *Label {
 	return &e.label
 }
 
@@ -143,11 +143,11 @@ func (e enum) Parent() DefinitionContainer {
 	return e.parent
 }
 
-func (e *enum) hasLabel(l *label) bool {
+func (e *enum) hasLabel(l *Label) bool {
 	return e.label.hasLabel(l)
 }
 
-func (e *enum) validateLabel(l *label) error {
+func (e *enum) validateLabel(l *Label) error {
 	switch l {
 	case &e.label:
 		return e.parent.validateLabel(l)
@@ -232,7 +232,7 @@ func (v *variant) validateAsEnumField() (err error) {
 	return v.field.validate()
 }
 
-func (v variant) validateLabel(l *label) error {
+func (v variant) validateLabel(l *Label) error {
 	return v.parent.validateLabel(l)
 }
 

@@ -5,16 +5,20 @@ import (
 	"regexp"
 )
 
-type label struct {
+type Label struct {
 	value  string
 	parent Labelled
 }
 
-func (l label) Get() string {
+type Labelled interface {
+	validateLabel(*Label) error
+}
+
+func (l Label) Get() string {
 	return l.value
 }
 
-func (l *label) Set(label string) error {
+func (l *Label) Set(label string) error {
 	old := l.value
 	l.value = label
 	if err := l.validate(); err != nil {
@@ -24,7 +28,7 @@ func (l *label) Set(label string) error {
 	return nil
 }
 
-func (l *label) validate() error {
+func (l *Label) validate() error {
 	if l.value == "" {
 		return fmt.Errorf("label not set")
 	}
@@ -44,10 +48,10 @@ func validateIdentifier(value string) (err error) {
 	return
 }
 
-func (l label) Parent() Labelled {
+func (l Label) Parent() Labelled {
 	return l.parent
 }
 
-func (l *label) hasLabel(other *label) bool {
+func (l *Label) hasLabel(other *Label) bool {
 	return l != other && l.value == other.value
 }

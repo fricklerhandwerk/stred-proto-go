@@ -3,12 +3,12 @@ package core
 import "fmt"
 
 type service struct {
-	label  label
+	label  Label
 	rpcs   map[*rpc]struct{}
 	parent *document
 }
 
-func (s *service) Label() Identifier {
+func (s *service) Label() *Label {
 	if s.label.parent == nil {
 		s.label.parent = s
 	}
@@ -35,7 +35,7 @@ func (s *service) Parent() Document {
 	return s.parent
 }
 
-func (s *service) hasLabel(l *label) bool {
+func (s *service) hasLabel(l *Label) bool {
 	return s.label.hasLabel(l)
 }
 
@@ -65,7 +65,7 @@ func (s *service) validate() error {
 	return nil
 }
 
-func (s *service) validateLabel(l *label) error {
+func (s *service) validateLabel(l *Label) error {
 	// TODO: rpc labels and rpc argument/return types share a namespace with
 	// *unqualified* message/enum labels within a service. you can only have "rpc
 	// Foo" and use "message Foo" as an argument/return type in one of the same
@@ -86,13 +86,13 @@ func (s *service) validateLabel(l *label) error {
 }
 
 type rpc struct {
-	label    label
+	label    Label
 	request  MessageType
 	response MessageType
 	parent   *service
 }
 
-func (r *rpc) Label() Identifier {
+func (r *rpc) Label() *Label {
 	return &r.label
 }
 
@@ -112,7 +112,7 @@ func (r *rpc) Parent() Service {
 	return r.parent
 }
 
-func (r *rpc) hasLabel(*label) bool {
+func (r *rpc) hasLabel(*Label) bool {
 	panic("not implemented")
 }
 

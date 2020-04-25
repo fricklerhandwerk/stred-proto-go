@@ -6,11 +6,11 @@ import (
 )
 
 type newMessage struct {
-	label  label
+	label  Label
 	parent DefinitionContainer
 }
 
-func (m *newMessage) Label() Identifier {
+func (m *newMessage) Label() *Label {
 	if m.label.parent == nil {
 		m.label.parent = m
 	}
@@ -20,7 +20,7 @@ func (m *newMessage) Label() Identifier {
 func (m *newMessage) InsertIntoParent() error {
 	mm := &message{
 		parent: m.parent,
-		label: label{
+		label: Label{
 			value: m.label.Get(),
 		},
 	}
@@ -32,12 +32,12 @@ func (m *newMessage) Parent() DefinitionContainer {
 	return m.parent
 }
 
-func (m *newMessage) validateLabel(l *label) error {
+func (m *newMessage) validateLabel(l *Label) error {
 	return m.parent.validateLabel(l)
 }
 
 type message struct {
-	label      label
+	label      Label
 	fields     map[MessageField]struct{}
 	messages   map[*message]struct{}
 	enums      map[*enum]struct{}
@@ -47,7 +47,7 @@ type message struct {
 	ValueType
 }
 
-func (m *message) Label() Identifier {
+func (m *message) Label() *Label {
 	return &m.label
 }
 
@@ -177,11 +177,11 @@ func (m *message) Parent() DefinitionContainer {
 	return m.parent
 }
 
-func (m message) hasLabel(l *label) bool {
+func (m message) hasLabel(l *Label) bool {
 	return m.label.hasLabel(l)
 }
 
-func (m *message) validateLabel(l *label) error {
+func (m *message) validateLabel(l *Label) error {
 	switch l {
 	case &m.label:
 		return m.parent.validateLabel(l)

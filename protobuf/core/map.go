@@ -55,7 +55,7 @@ func (m *mapField) validateAsMessageField() error {
 	return nil
 }
 
-func (m *mapField) validateLabel(l *label) error {
+func (m *mapField) validateLabel(l *Label) error {
 	return m.parent.validateLabel(l)
 }
 

@@ -5,12 +5,12 @@ import (
 )
 
 type field struct {
-	label      label
+	label      Label
 	number     Number
 	deprecated flag
 }
 
-func (f *field) Label() Identifier {
+func (f *field) Label() *Label {
 	return &f.label
 }
 
@@ -22,7 +22,7 @@ func (f *field) Deprecated() Flag {
 	return &f.deprecated
 }
 
-func (f *field) hasLabel(other *label) bool {
+func (f *field) hasLabel(other *Label) bool {
 	return f.label.hasLabel(other)
 }
 
@@ -89,7 +89,7 @@ func (r *repeatableField) validateAsMessageField() (err error) {
 	return
 }
 
-func (r *repeatableField) validateLabel(l *label) error {
+func (r *repeatableField) validateLabel(l *Label) error {
 	return r.parent.validateLabel(l)
 }
 

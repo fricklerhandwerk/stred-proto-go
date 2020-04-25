@@ -137,7 +137,7 @@ func (d *document) insertEnum(e *enum) (err error) {
 	return nil
 }
 
-func (d document) validateLabel(l *label) error {
+func (d document) validateLabel(l *Label) error {
 	for s := range d.services {
 		if s.hasLabel(l) {
 			// TODO: return error type which contains other declaration
@@ -160,8 +160,16 @@ func (d document) validateLabel(l *label) error {
 }
 
 type _package struct {
-	label
+	label  Label
 	parent *document
+}
+
+func (p _package) Get() string {
+	return p.label.Get()
+}
+
+func (p *_package) Set(value string) error {
+	return p.label.Set(value)
 }
 
 func (p *_package) Unset() error {
@@ -174,19 +182,19 @@ func (p *_package) Parent() Document {
 	return p.parent
 }
 
-func (p *_package) validateLabel(l *label) error {
+func (p *_package) validateLabel(l *Label) error {
 	return nil
 }
 
 type _import struct {
 	parent *document
-	path   label
+	path   Label
 	public Flag
 
 	TopLevelDeclaration
 }
 
-func (i _import) Path() Identifier {
+func (i _import) Path() *Label {
 	return &i.path
 }
 

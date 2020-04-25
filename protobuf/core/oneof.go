@@ -5,12 +5,12 @@ import (
 )
 
 type oneOf struct {
-	label  label
+	label  Label
 	fields map[*oneOfField]struct{}
 	parent *message
 }
 
-func (o *oneOf) Label() Identifier {
+func (o *oneOf) Label() *Label {
 	if o.label.parent == nil {
 		o.label.parent = o
 	}
@@ -57,7 +57,7 @@ func (o *oneOf) insertField(f *oneOfField) error {
 	return nil
 }
 
-func (o *oneOf) validateLabel(l *label) error {
+func (o *oneOf) validateLabel(l *Label) error {
 	if o.hasLabel(l) {
 		return fmt.Errorf("field label %s already in use", l)
 	}
@@ -96,7 +96,7 @@ func (o oneOf) hasNumber(n FieldNumber) bool {
 	return false
 }
 
-func (o *oneOf) hasLabel(l *label) bool {
+func (o *oneOf) hasLabel(l *Label) bool {
 	for f := range o.fields {
 		if f.hasLabel(l) {
 			return true
@@ -118,7 +118,7 @@ func (f *oneOfField) Parent() OneOf {
 	return f.parent
 }
 
-func (f oneOfField) validateLabel(l *label) error {
+func (f oneOfField) validateLabel(l *Label) error {
 	return f.parent.validateLabel(l)
 }
 

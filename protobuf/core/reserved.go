@@ -44,7 +44,7 @@ func (r reservedNumber) validateAsMessageField() error {
 	return r.validateAsEnumField()
 }
 
-func (r reservedNumber) hasLabel(l *label) bool {
+func (r reservedNumber) hasLabel(l *Label) bool {
 	return false
 }
 
@@ -106,7 +106,7 @@ func (r *reservedRange) intersects(other FieldNumber) bool {
 	}
 }
 
-func (r reservedRange) hasLabel(l *label) bool {
+func (r reservedRange) hasLabel(l *Label) bool {
 	return false
 }
 
@@ -148,8 +148,16 @@ func (r *reservedRange) validateAsMessageField() error {
 }
 
 type reservedLabel struct {
-	label
+	label  Label
 	parent Definition
+}
+
+func (r reservedLabel) Get() string {
+	return r.label.Get()
+}
+
+func (r *reservedLabel) Set(value string) error {
+	return r.label.Set(value)
 }
 
 func (r *reservedLabel) InsertIntoParent() error {
@@ -163,7 +171,7 @@ func (r *reservedLabel) InsertIntoParent() error {
 	}
 }
 
-func (r reservedLabel) validateLabel(l *label) error {
+func (r reservedLabel) validateLabel(l *Label) error {
 	return r.parent.validateLabel(l)
 }
 
@@ -177,6 +185,10 @@ func (r *reservedLabel) validateAsEnumField() error {
 
 func (r reservedLabel) validateAsMessageField() error {
 	return r.validateAsEnumField()
+}
+
+func (r *reservedLabel) hasLabel(l *Label) bool {
+	return r.label.hasLabel(l)
 }
 
 func (r reservedLabel) hasNumber(n FieldNumber) bool {
