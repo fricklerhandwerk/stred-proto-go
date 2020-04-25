@@ -130,8 +130,6 @@ func (m *message) NewField() Field {
 	f.label.parent = f
 	f.number.parent = f
 	f.deprecated.parent = f
-	f.repeatableType.parent = f
-	f._type.parent = f
 	return f
 }
 

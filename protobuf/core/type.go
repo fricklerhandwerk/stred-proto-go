@@ -2,6 +2,22 @@ package core
 
 import "fmt"
 
+// ValueType identifier. Valid values are all built-in types and `Message`s.
+// Note that API consumers cannot create types which implement interface
+// `Message`, and the package will only emit properly constructed `Message`s.
+type ValueType interface {
+	_isValueType()
+}
+
+// MapKeyType identifier.
+// Valid values are all built-in types except:
+// - `double`
+// - `float`
+// - `bytes`
+type MapKeyType interface {
+	_isKeyType()
+}
+
 type Type struct {
 	value  ValueType
 	parent Typed
@@ -13,7 +29,6 @@ type Typed interface {
 
 func (t *Type) Get() ValueType {
 	return t.value
-
 }
 
 func (t *Type) Set(value ValueType) error {
@@ -43,44 +58,6 @@ func (t *Type) validate() error {
 		return fmt.Errorf("type must not be nil")
 	}
 	return nil
-}
-
-type repeatableType struct {
-	_type    Type
-	repeated Flag
-	parent   *repeatableField
-}
-
-func (t *repeatableType) Type() *Type {
-	if t._type.parent == nil {
-		t._type.parent = t
-	}
-	return &t._type
-}
-
-func (t *repeatableType) Repeated() *Flag {
-	if t.repeated.parent == nil {
-		t.repeated.parent = t
-	}
-	return &t.repeated
-}
-
-func (t *repeatableType) Parent() Field {
-	return t.parent
-}
-
-func (t *repeatableType) validateFlag(f *Flag) error {
-	switch f {
-	case &t.repeated:
-		// TODO: if we ever have "safe mode" to prevent backwards-incompatible
-		// changes, that is where errors whould happen
-	}
-	// deprecated
-	return nil
-}
-
-func (t *repeatableType) validate() error {
-	return t._type.validate()
 }
 
 type keyType string

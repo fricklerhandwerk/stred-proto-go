@@ -24,6 +24,7 @@ func (r *reservedNumber) InsertIntoParent() error {
 func (r reservedNumber) Get() *uint {
 	return r.number.Get()
 }
+
 func (r *reservedNumber) Set(value uint) error {
 	return r.number.Set(value)
 }

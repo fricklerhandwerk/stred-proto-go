@@ -67,8 +67,23 @@ func (f *typedField) validate() (err error) {
 
 type repeatableField struct {
 	field
-	repeatableType
-	parent *message
+	_type    Type
+	repeated Flag
+	parent   *message
+}
+
+func (r *repeatableField) Type() *Type {
+	if r._type.parent == nil {
+		r._type.parent = r
+	}
+	return &r._type
+}
+
+func (r *repeatableField) Repeated() *Flag {
+	if r.repeated.parent == nil {
+		r.repeated.parent = r
+	}
+	return &r.repeated
 }
 
 func (r *repeatableField) InsertIntoParent() error {
@@ -83,7 +98,7 @@ func (r *repeatableField) validateAsMessageField() (err error) {
 	if err = r.field.validate(); err != nil {
 		return
 	}
-	if err = r.repeatableType.validate(); err != nil {
+	if err = r._type.validate(); err != nil {
 		return
 	}
 	return
@@ -95,4 +110,16 @@ func (r *repeatableField) validateLabel(l *Label) error {
 
 func (r *repeatableField) validateNumber(n FieldNumber) error {
 	return r.parent.validateNumber(n)
+}
+
+func (r *repeatableField) validateFlag(f *Flag) error {
+	// TODO: if we ever have "safe mode" to prevent backwards-incompatible
+	// changes, that is where errors whould happen
+	switch f {
+	case &r.deprecated:
+		return nil
+	case &r.repeated:
+		return nil
+	}
+	return nil
 }

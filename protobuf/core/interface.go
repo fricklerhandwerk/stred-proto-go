@@ -64,35 +64,11 @@ package core
 // will always return values or non-nil interfaces, as they have necessarily
 // been validated prior.
 
-type RepeatableType interface {
-	Get() ValueType
-	Set(ValueType) error
-	Repeated() *Flag
-
-	Parent() Field
-}
-
 type KeyType interface {
 	Get() MapKeyType
 	Set(MapKeyType) error
 
 	Parent() Map
-}
-
-// ValueType identifier. Valid values are all built-in types and `Message`s.
-// Note that API consumers cannot create types which implement interface
-// `Message`, and the package will only emit properly constructed `Message`s.
-type ValueType interface {
-	_isValueType()
-}
-
-// MapKeyType identifier.
-// Valid values are all built-in types except:
-// - `double`
-// - `float`
-// - `bytes`
-type MapKeyType interface {
-	_isKeyType()
 }
 
 type Document interface {
