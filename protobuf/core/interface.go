@@ -108,7 +108,7 @@ type Document interface {
 	NewMessage() *NewMessage
 
 	Enums() []Enum
-	NewEnum() NewEnum
+	NewEnum() *NewEnum
 
 	validateLabel(*Label) error
 	insertImport(*Import) error
@@ -148,7 +148,7 @@ type DefinitionContainer interface {
 	NewMessage() *NewMessage
 
 	Enums() []Enum
-	NewEnum() NewEnum
+	NewEnum() *NewEnum
 
 	validateLabel(*Label) error
 	insertMessage(*message) error
@@ -170,7 +170,7 @@ type Message interface {
 	NewMessage() *NewMessage
 
 	Enums() []Enum
-	NewEnum() NewEnum
+	NewEnum() *NewEnum
 
 	Parent() DefinitionContainer
 
@@ -284,13 +284,6 @@ type MessageField interface {
 	validateAsMessageField() error
 	hasLabel(*Label) bool
 	hasNumber(FieldNumber) bool
-}
-
-type NewEnum interface {
-	Label() *Label
-
-	InsertIntoParent() error
-	Parent() DefinitionContainer
 }
 
 type Enum interface {

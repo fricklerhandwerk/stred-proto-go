@@ -169,8 +169,8 @@ func (m *message) NewMessage() *NewMessage {
 	return &NewMessage{parent: m}
 }
 
-func (m *message) NewEnum() NewEnum {
-	return &newEnum{parent: m}
+func (m *message) NewEnum() *NewEnum {
+	return &NewEnum{parent: m}
 }
 
 func (m *message) Parent() DefinitionContainer {

@@ -80,8 +80,8 @@ func (d document) Enums() (out []Enum) {
 	return
 }
 
-func (d *document) NewEnum() NewEnum {
-	return &newEnum{parent: d}
+func (d *document) NewEnum() *NewEnum {
+	return &NewEnum{parent: d}
 }
 
 func (d *document) insertImport(i *Import) (err error) {

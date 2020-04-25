@@ -6,12 +6,12 @@ import (
 	"strings"
 )
 
-type newEnum struct {
+type NewEnum struct {
 	label  Label
 	parent DefinitionContainer
 }
 
-func (e *newEnum) InsertIntoParent() error {
+func (e *NewEnum) InsertIntoParent() error {
 	ee := &enum{
 		parent: e.parent,
 		label: Label{
@@ -23,18 +23,18 @@ func (e *newEnum) InsertIntoParent() error {
 	return e.parent.insertEnum(ee)
 }
 
-func (e *newEnum) Label() *Label {
+func (e *NewEnum) Label() *Label {
 	if e.label.parent == nil {
 		e.label.parent = e
 	}
 	return &e.label
 }
 
-func (e newEnum) Parent() DefinitionContainer {
+func (e NewEnum) Parent() DefinitionContainer {
 	return e.parent
 }
 
-func (e newEnum) validateLabel(l *Label) error {
+func (e NewEnum) validateLabel(l *Label) error {
 	return e.parent.validateLabel(l)
 }
 
