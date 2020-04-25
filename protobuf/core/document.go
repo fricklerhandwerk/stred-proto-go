@@ -9,14 +9,14 @@ func NewDocument() Document {
 }
 
 type document struct {
-	_package _package
+	_package Package
 	imports  map[*Import]struct{}
 	services map[*service]struct{}
 	messages map[*message]struct{}
 	enums    map[*enum]struct{}
 }
 
-func (d *document) Package() Package {
+func (d *document) Package() *Package {
 	if d._package.parent == nil {
 		d._package.parent = d
 		d._package.label.parent = &d._package
@@ -159,30 +159,30 @@ func (d document) validateLabel(l *Label) error {
 	return nil
 }
 
-type _package struct {
+type Package struct {
 	label  Label
 	parent *document
 }
 
-func (p _package) Get() string {
+func (p Package) Get() string {
 	return p.label.Get()
 }
 
-func (p *_package) Set(value string) error {
+func (p *Package) Set(value string) error {
 	return p.label.Set(value)
 }
 
-func (p *_package) Unset() error {
+func (p *Package) Unset() error {
 	// TODO: check if there is a condition where unsetting is impossible
 	p.label.value = ""
 	return nil
 }
 
-func (p *_package) Parent() Document {
+func (p *Package) Parent() Document {
 	return p.parent
 }
 
-func (p *_package) validateLabel(l *Label) error {
+func (p *Package) validateLabel(l *Label) error {
 	return nil
 }
 

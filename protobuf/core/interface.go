@@ -96,7 +96,7 @@ type MapKeyType interface {
 }
 
 type Document interface {
-	Package() Package
+	Package() *Package
 
 	Imports() []*Import
 	NewImport() *Import
@@ -115,14 +115,6 @@ type Document interface {
 	insertService(*service) error
 	insertMessage(*message) error
 	insertEnum(*enum) error
-}
-
-type Package interface {
-	Get() string
-	Set(string) error
-	Unset() error
-
-	Parent() Document
 }
 
 type TopLevelDeclaration interface {
