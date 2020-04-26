@@ -148,20 +148,20 @@ func (r *ReservedRange) validateAsMessageField() error {
 	return r.validateAsEnumField()
 }
 
-type reservedLabel struct {
+type ReservedLabel struct {
 	label  Label
 	parent Definition
 }
 
-func (r reservedLabel) Get() string {
+func (r ReservedLabel) Get() string {
 	return r.label.Get()
 }
 
-func (r *reservedLabel) Set(value string) error {
+func (r *ReservedLabel) Set(value string) error {
 	return r.label.Set(value)
 }
 
-func (r *reservedLabel) InsertIntoParent() error {
+func (r *ReservedLabel) InsertIntoParent() error {
 	switch p := r.parent.(type) {
 	case *enum:
 		return p.insertField(r)
@@ -172,26 +172,26 @@ func (r *reservedLabel) InsertIntoParent() error {
 	}
 }
 
-func (r reservedLabel) validateLabel(l *Label) error {
+func (r ReservedLabel) validateLabel(l *Label) error {
 	return r.parent.validateLabel(l)
 }
 
-func (r reservedLabel) Parent() Definition {
+func (r ReservedLabel) Parent() Definition {
 	return r.parent
 }
 
-func (r *reservedLabel) validateAsEnumField() error {
+func (r *ReservedLabel) validateAsEnumField() error {
 	return r.label.validate()
 }
 
-func (r reservedLabel) validateAsMessageField() error {
+func (r ReservedLabel) validateAsMessageField() error {
 	return r.validateAsEnumField()
 }
 
-func (r *reservedLabel) hasLabel(l *Label) bool {
+func (r *ReservedLabel) hasLabel(l *Label) bool {
 	return r.label.hasLabel(l)
 }
 
-func (r reservedLabel) hasNumber(n FieldNumber) bool {
+func (r ReservedLabel) hasNumber(n FieldNumber) bool {
 	return false
 }

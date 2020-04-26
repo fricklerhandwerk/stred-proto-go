@@ -167,8 +167,8 @@ func (m *message) NewReservedNumber() *ReservedNumber {
 
 }
 
-func (m *message) NewReservedLabel() ReservedLabel {
-	l := &reservedLabel{parent: m}
+func (m *message) NewReservedLabel() *ReservedLabel {
+	l := &ReservedLabel{parent: m}
 	l.label.parent = l
 	return l
 }

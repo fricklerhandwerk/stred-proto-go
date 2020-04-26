@@ -139,8 +139,8 @@ func (e *enum) NewReservedNumber() *ReservedNumber {
 	return n
 }
 
-func (e *enum) NewReservedLabel() ReservedLabel {
-	l := &reservedLabel{parent: e}
+func (e *enum) NewReservedLabel() *ReservedLabel {
+	l := &ReservedLabel{parent: e}
 	l.label.parent = l
 	return l
 }
