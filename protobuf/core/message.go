@@ -47,6 +47,12 @@ type message struct {
 	ValueType
 }
 
+type MessageField interface {
+	validateAsMessageField() error
+	hasLabel(*Label) bool
+	hasNumber(FieldNumber) bool
+}
+
 func (m *message) Label() *Label {
 	return &m.label
 }
@@ -142,8 +148,8 @@ func (m *message) NewMap() *Map {
 	return f
 }
 
-func (m *message) NewOneOf() OneOf {
-	return &oneOf{parent: m}
+func (m *message) NewOneOf() *OneOf {
+	return &OneOf{parent: m}
 }
 
 func (m *message) NewReservedRange() ReservedRange {

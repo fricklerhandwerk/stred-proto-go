@@ -48,6 +48,12 @@ type enum struct {
 	ValueType
 }
 
+type EnumField interface {
+	validateAsEnumField() error
+	hasLabel(*Label) bool
+	hasNumber(FieldNumber) bool
+}
+
 func (e *enum) Label() *Label {
 	return &e.label
 }

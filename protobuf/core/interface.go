@@ -101,7 +101,7 @@ type Message interface {
 
 	NewField() Field
 	NewMap() *Map
-	NewOneOf() OneOf
+	NewOneOf() *OneOf
 	NewReservedNumber() ReservedNumber
 	NewReservedRange() ReservedRange
 	NewReservedLabel() ReservedLabel
@@ -132,18 +132,6 @@ type Field interface {
 	Deprecated() *Flag
 	Type() *Type
 	Repeated() *Flag
-
-	InsertIntoParent() error
-	Parent() Message
-
-	MessageField
-}
-
-type OneOf interface {
-	Label() *Label
-
-	Fields() []*OneOfField
-	NewField() *OneOfField
 
 	InsertIntoParent() error
 	Parent() Message
@@ -197,12 +185,6 @@ type ReservedLabel interface {
 	hasNumber(FieldNumber) bool
 }
 
-type MessageField interface {
-	validateAsMessageField() error
-	hasLabel(*Label) bool
-	hasNumber(FieldNumber) bool
-}
-
 type Enum interface {
 	Label() *Label
 	AllowAlias() *Flag
@@ -226,10 +208,4 @@ type Enum interface {
 	removeReference(*Type)
 
 	ValueType
-}
-
-type EnumField interface {
-	validateAsEnumField() error
-	hasLabel(*Label) bool
-	hasNumber(FieldNumber) bool
 }

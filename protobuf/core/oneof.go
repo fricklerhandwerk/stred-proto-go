@@ -4,20 +4,20 @@ import (
 	"fmt"
 )
 
-type oneOf struct {
+type OneOf struct {
 	label  Label
 	fields map[*OneOfField]struct{}
 	parent *message
 }
 
-func (o *oneOf) Label() *Label {
+func (o *OneOf) Label() *Label {
 	if o.label.parent == nil {
 		o.label.parent = o
 	}
 	return &o.label
 }
 
-func (o *oneOf) NewField() *OneOfField {
+func (o *OneOf) NewField() *OneOfField {
 	v := &OneOfField{parent: o}
 	v.typedField.label.parent = v
 	v.typedField.number.parent = v
@@ -26,7 +26,7 @@ func (o *oneOf) NewField() *OneOfField {
 	return v
 }
 
-func (o oneOf) Fields() (out []*OneOfField) {
+func (o OneOf) Fields() (out []*OneOfField) {
 	out = make([]*OneOfField, len(o.fields))
 	i := 0
 	for f := range o.fields {
@@ -35,15 +35,15 @@ func (o oneOf) Fields() (out []*OneOfField) {
 	return
 }
 
-func (o *oneOf) InsertIntoParent() error {
+func (o *OneOf) InsertIntoParent() error {
 	return o.parent.insertField(o)
 }
 
-func (o *oneOf) Parent() Message {
+func (o *OneOf) Parent() Message {
 	return o.parent
 }
 
-func (o *oneOf) insertField(f *OneOfField) error {
+func (o *OneOf) insertField(f *OneOfField) error {
 	if o.fields == nil {
 		o.fields = make(map[*OneOfField]struct{})
 	}
@@ -57,21 +57,21 @@ func (o *oneOf) insertField(f *OneOfField) error {
 	return nil
 }
 
-func (o *oneOf) validateLabel(l *Label) error {
+func (o *OneOf) validateLabel(l *Label) error {
 	if o.hasLabel(l) {
 		return fmt.Errorf("field label %s already in use", l)
 	}
 	return o.parent.validateLabel(l)
 }
 
-func (o oneOf) validateNumber(n FieldNumber) error {
+func (o OneOf) validateNumber(n FieldNumber) error {
 	if o.hasNumber(n) {
 		return fmt.Errorf("field number %s already in use", n)
 	}
 	return o.parent.validateNumber(n)
 }
 
-func (o *oneOf) validateAsMessageField() error {
+func (o *OneOf) validateAsMessageField() error {
 	// TODO: let label self-validate
 	if o.label.value == "" {
 		return fmt.Errorf("oneof label not set")
@@ -87,7 +87,7 @@ func (o *oneOf) validateAsMessageField() error {
 	return nil
 }
 
-func (o oneOf) hasNumber(n FieldNumber) bool {
+func (o OneOf) hasNumber(n FieldNumber) bool {
 	for f := range o.fields {
 		if f.hasNumber(n) {
 			return true
@@ -96,7 +96,7 @@ func (o oneOf) hasNumber(n FieldNumber) bool {
 	return false
 }
 
-func (o *oneOf) hasLabel(l *Label) bool {
+func (o *OneOf) hasLabel(l *Label) bool {
 	for f := range o.fields {
 		if f.hasLabel(l) {
 			return true
@@ -107,14 +107,14 @@ func (o *oneOf) hasLabel(l *Label) bool {
 
 type OneOfField struct {
 	typedField
-	parent *oneOf
+	parent *OneOf
 }
 
 func (f *OneOfField) InsertIntoParent() error {
 	return f.parent.insertField(f)
 }
 
-func (f *OneOfField) Parent() OneOf {
+func (f *OneOfField) Parent() *OneOf {
 	return f.parent
 }
 
