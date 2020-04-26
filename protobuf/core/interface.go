@@ -142,23 +142,13 @@ type Field interface {
 type OneOf interface {
 	Label() *Label
 
-	Fields() []OneOfField
-	NewField() OneOfField
+	Fields() []*OneOfField
+	NewField() *OneOfField
 
 	InsertIntoParent() error
 	Parent() Message
 
 	MessageField
-}
-
-type OneOfField interface {
-	Label() *Label
-	Number() *Number
-	Type() *Type
-	Deprecated() *Flag
-
-	InsertIntoParent() error
-	Parent() OneOf
 }
 
 type ReservedRange interface {

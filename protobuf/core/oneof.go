@@ -6,7 +6,7 @@ import (
 
 type oneOf struct {
 	label  Label
-	fields map[*oneOfField]struct{}
+	fields map[*OneOfField]struct{}
 	parent *message
 }
 
@@ -17,8 +17,8 @@ func (o *oneOf) Label() *Label {
 	return &o.label
 }
 
-func (o *oneOf) NewField() OneOfField {
-	v := &oneOfField{parent: o}
+func (o *oneOf) NewField() *OneOfField {
+	v := &OneOfField{parent: o}
 	v.typedField.label.parent = v
 	v.typedField.number.parent = v
 	v.typedField.deprecated.parent = v
@@ -26,8 +26,8 @@ func (o *oneOf) NewField() OneOfField {
 	return v
 }
 
-func (o oneOf) Fields() (out []OneOfField) {
-	out = make([]OneOfField, len(o.fields))
+func (o oneOf) Fields() (out []*OneOfField) {
+	out = make([]*OneOfField, len(o.fields))
 	i := 0
 	for f := range o.fields {
 		out[i] = f
@@ -43,9 +43,9 @@ func (o *oneOf) Parent() Message {
 	return o.parent
 }
 
-func (o *oneOf) insertField(f *oneOfField) error {
+func (o *oneOf) insertField(f *OneOfField) error {
 	if o.fields == nil {
-		o.fields = make(map[*oneOfField]struct{})
+		o.fields = make(map[*OneOfField]struct{})
 	}
 	if _, ok := o.fields[f]; ok {
 		return fmt.Errorf("already inserted")
@@ -105,27 +105,27 @@ func (o *oneOf) hasLabel(l *Label) bool {
 	return o.label.hasLabel(l)
 }
 
-type oneOfField struct {
+type OneOfField struct {
 	typedField
 	parent *oneOf
 }
 
-func (f *oneOfField) InsertIntoParent() error {
+func (f *OneOfField) InsertIntoParent() error {
 	return f.parent.insertField(f)
 }
 
-func (f *oneOfField) Parent() OneOf {
+func (f *OneOfField) Parent() OneOf {
 	return f.parent
 }
 
-func (f oneOfField) validateLabel(l *Label) error {
+func (f OneOfField) validateLabel(l *Label) error {
 	return f.parent.validateLabel(l)
 }
 
-func (f oneOfField) validateNumber(n FieldNumber) error {
+func (f OneOfField) validateNumber(n FieldNumber) error {
 	return f.parent.validateNumber(n)
 }
 
-func (f oneOfField) validateFlag(*Flag) error {
+func (f OneOfField) validateFlag(*Flag) error {
 	return nil
 }
