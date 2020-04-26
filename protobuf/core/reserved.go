@@ -57,27 +57,27 @@ func (r reservedNumber) intersects(other FieldNumber) bool {
 	return r.number.intersects(other)
 }
 
-type reservedRange struct {
+type ReservedRange struct {
 	start  Number
 	end    Number
 	parent Definition
 }
 
-func (r *reservedRange) Start() *Number {
+func (r *ReservedRange) Start() *Number {
 	if r.start.parent == nil {
 		r.start.parent = r
 	}
 	return &r.start
 }
 
-func (r *reservedRange) End() *Number {
+func (r *ReservedRange) End() *Number {
 	if r.end.parent == nil {
 		r.end.parent = r
 	}
 	return &r.end
 }
 
-func (r *reservedRange) InsertIntoParent() error {
+func (r *ReservedRange) InsertIntoParent() error {
 	switch p := r.parent.(type) {
 	case *enum:
 		return p.insertField(r)
@@ -88,30 +88,30 @@ func (r *reservedRange) InsertIntoParent() error {
 	}
 }
 
-func (r *reservedRange) Parent() Definition {
+func (r *ReservedRange) Parent() Definition {
 	return r.parent
 }
 
-func (r *reservedRange) hasNumber(other FieldNumber) bool {
+func (r *ReservedRange) hasNumber(other FieldNumber) bool {
 	return r != other && r.intersects(other)
 }
 
-func (r *reservedRange) intersects(other FieldNumber) bool {
+func (r *ReservedRange) intersects(other FieldNumber) bool {
 	switch o := other.(type) {
 	case *Number:
 		return o.intersects(r)
-	case *reservedRange:
+	case *ReservedRange:
 		return o.start.intersects(r) || o.end.intersects(r)
 	default:
 		panic(fmt.Sprintf("unhandled fieldNumber type %T", o))
 	}
 }
 
-func (r reservedRange) hasLabel(l *Label) bool {
+func (r ReservedRange) hasLabel(l *Label) bool {
 	return false
 }
 
-func (r *reservedRange) validateNumber(n FieldNumber) error {
+func (r *ReservedRange) validateNumber(n FieldNumber) error {
 	switch n {
 	case &r.start:
 		if r.end.value == nil {
@@ -137,14 +137,14 @@ func (r *reservedRange) validateNumber(n FieldNumber) error {
 	}
 }
 
-func (r *reservedRange) validateAsEnumField() error {
+func (r *ReservedRange) validateAsEnumField() error {
 	if err := r.validateNumber(r); err != nil {
 		return err
 	}
 	return r.parent.validateNumber(r)
 }
 
-func (r *reservedRange) validateAsMessageField() error {
+func (r *ReservedRange) validateAsMessageField() error {
 	return r.validateAsEnumField()
 }
 

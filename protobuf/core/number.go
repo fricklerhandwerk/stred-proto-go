@@ -64,7 +64,7 @@ func (n *Number) intersects(other FieldNumber) bool {
 	switch o := other.(type) {
 	case *Number:
 		return *n.value == *o.value
-	case *reservedRange:
+	case *ReservedRange:
 		return *n.value >= *o.start.value && *n.value <= *o.end.value
 	default:
 		panic(fmt.Sprintf("unhandled fieldNumber type %T", o))

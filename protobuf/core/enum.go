@@ -129,8 +129,8 @@ func (e *enum) NewVariant() *Variant {
 	return v
 }
 
-func (e *enum) NewReservedRange() ReservedRange {
-	return &reservedRange{parent: e}
+func (e *enum) NewReservedRange() *ReservedRange {
+	return &ReservedRange{parent: e}
 }
 
 func (e *enum) NewReservedNumber() ReservedNumber {
@@ -196,7 +196,7 @@ func (e enum) validateNumber(n FieldNumber) error {
 			switch v := n.(type) {
 			case *Number:
 				source = fmt.Sprintf("field number %d", *v.value)
-			case *reservedRange:
+			case *ReservedRange:
 				source = fmt.Sprintf("range %d to %d", *v.start.value, *v.end.value)
 			default:
 				panic(fmt.Sprintf("unhandled number type %T", n))

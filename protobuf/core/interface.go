@@ -68,7 +68,7 @@ type Definition interface {
 	Label() *Label
 
 	NewReservedNumber() ReservedNumber
-	NewReservedRange() ReservedRange
+	NewReservedRange() *ReservedRange
 	NewReservedLabel() ReservedLabel
 
 	Parent() DefinitionContainer
@@ -99,7 +99,7 @@ type Message interface {
 	NewMap() *Map
 	NewOneOf() *OneOf
 	NewReservedNumber() ReservedNumber
-	NewReservedRange() ReservedRange
+	NewReservedRange() *ReservedRange
 	NewReservedLabel() ReservedLabel
 
 	Messages() []Message
@@ -120,24 +120,6 @@ type Message interface {
 	removeReference(MessageReference)
 
 	ValueType
-}
-
-type ReservedRange interface {
-	Start() *Number
-	End() *Number
-
-	InsertIntoParent() error
-	Parent() Definition
-
-	// TODO: self-validate
-	//validate() error
-
-	FieldNumber
-
-	validateAsMessageField() error
-	validateAsEnumField() error
-	hasLabel(*Label) bool
-	hasNumber(FieldNumber) bool
 }
 
 type ReservedNumber interface {
@@ -176,7 +158,7 @@ type Enum interface {
 
 	NewVariant() *Variant
 	NewReservedNumber() ReservedNumber
-	NewReservedRange() ReservedRange
+	NewReservedRange() *ReservedRange
 	NewReservedLabel() ReservedLabel
 
 	Parent() DefinitionContainer

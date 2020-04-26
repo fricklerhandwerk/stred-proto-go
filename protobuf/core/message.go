@@ -156,8 +156,8 @@ func (m *message) NewOneOf() *OneOf {
 	return &OneOf{parent: m}
 }
 
-func (m *message) NewReservedRange() ReservedRange {
-	return &reservedRange{parent: m}
+func (m *message) NewReservedRange() *ReservedRange {
+	return &ReservedRange{parent: m}
 }
 
 func (m *message) NewReservedNumber() ReservedNumber {
@@ -224,7 +224,7 @@ func (m message) validateNumber(n FieldNumber) error {
 		if *v.value < 1 {
 			return errors.New("message field number must be >= 1")
 		}
-	case *reservedRange:
+	case *ReservedRange:
 		if *v.start.value < 1 {
 			return errors.New("message field numbers must be >= 1")
 		}
