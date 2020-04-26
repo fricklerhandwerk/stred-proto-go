@@ -4,33 +4,33 @@ import (
 	"errors"
 )
 
-type mapKeyType struct {
+type KeyType struct {
 	value  MapKeyType
 	parent *mapField
 }
 
-func (t mapKeyType) Get() MapKeyType {
+func (t KeyType) Get() MapKeyType {
 	return t.value
 }
 
-func (t *mapKeyType) Set(value MapKeyType) error {
+func (t *KeyType) Set(value MapKeyType) error {
 	t.value = value
 	// TODO: checks in "safe mode"
 	return nil
 }
 
-func (t mapKeyType) Parent() Map {
+func (t KeyType) Parent() Map {
 	return t.parent
 }
 
 type mapField struct {
 	typedField
-	keyType mapKeyType
+	keyType KeyType
 
 	parent *message
 }
 
-func (m *mapField) KeyType() KeyType {
+func (m *mapField) KeyType() *KeyType {
 	if m.keyType.parent == nil {
 		m.keyType.parent = m
 	}

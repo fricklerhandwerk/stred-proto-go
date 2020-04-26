@@ -64,13 +64,6 @@ package core
 // will always return values or non-nil interfaces, as they have necessarily
 // been validated prior.
 
-type KeyType interface {
-	Get() MapKeyType
-	Set(MapKeyType) error
-
-	Parent() Map
-}
-
 type Definition interface {
 	Label() *Label
 
@@ -150,7 +143,7 @@ type Map interface {
 	Label() *Label
 	Number() *Number
 	Deprecated() *Flag
-	KeyType() KeyType
+	KeyType() *KeyType
 	Type() *Type
 
 	InsertIntoParent() error
