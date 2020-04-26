@@ -100,7 +100,7 @@ type Message interface {
 	Fields() []MessageField
 
 	NewField() Field
-	NewMap() Map
+	NewMap() *Map
 	NewOneOf() OneOf
 	NewReservedNumber() ReservedNumber
 	NewReservedRange() ReservedRange
@@ -132,19 +132,6 @@ type Field interface {
 	Deprecated() *Flag
 	Type() *Type
 	Repeated() *Flag
-
-	InsertIntoParent() error
-	Parent() Message
-
-	MessageField
-}
-
-type Map interface {
-	Label() *Label
-	Number() *Number
-	Deprecated() *Flag
-	KeyType() *KeyType
-	Type() *Type
 
 	InsertIntoParent() error
 	Parent() Message

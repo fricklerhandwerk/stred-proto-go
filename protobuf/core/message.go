@@ -133,8 +133,8 @@ func (m *message) NewField() Field {
 	return f
 }
 
-func (m *message) NewMap() Map {
-	f := &mapField{parent: m}
+func (m *message) NewMap() *Map {
+	f := &Map{parent: m}
 	f.label.parent = f
 	f.number.parent = f
 	f.deprecated.parent = f

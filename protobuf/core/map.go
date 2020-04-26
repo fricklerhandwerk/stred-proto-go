@@ -6,7 +6,7 @@ import (
 
 type KeyType struct {
 	value  MapKeyType
-	parent *mapField
+	parent *Map
 }
 
 func (t KeyType) Get() MapKeyType {
@@ -19,33 +19,33 @@ func (t *KeyType) Set(value MapKeyType) error {
 	return nil
 }
 
-func (t KeyType) Parent() Map {
+func (t KeyType) Parent() *Map {
 	return t.parent
 }
 
-type mapField struct {
+type Map struct {
 	typedField
 	keyType KeyType
 
 	parent *message
 }
 
-func (m *mapField) KeyType() *KeyType {
+func (m *Map) KeyType() *KeyType {
 	if m.keyType.parent == nil {
 		m.keyType.parent = m
 	}
 	return &m.keyType
 }
 
-func (m *mapField) InsertIntoParent() error {
+func (m *Map) InsertIntoParent() error {
 	return m.parent.insertField(m)
 }
 
-func (m *mapField) Parent() Message {
+func (m *Map) Parent() Message {
 	return m.parent
 }
 
-func (m *mapField) validateAsMessageField() error {
+func (m *Map) validateAsMessageField() error {
 	if err := m.validate(); err != nil {
 		return err
 	}
@@ -55,14 +55,14 @@ func (m *mapField) validateAsMessageField() error {
 	return nil
 }
 
-func (m *mapField) validateLabel(l *Label) error {
+func (m *Map) validateLabel(l *Label) error {
 	return m.parent.validateLabel(l)
 }
 
-func (m *mapField) validateNumber(n FieldNumber) error {
+func (m *Map) validateNumber(n FieldNumber) error {
 	return m.parent.validateNumber(n)
 }
 
-func (m *mapField) validateFlag(*Flag) error {
+func (m *Map) validateFlag(*Flag) error {
 	return nil
 }
