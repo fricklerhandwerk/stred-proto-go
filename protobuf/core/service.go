@@ -119,3 +119,51 @@ func (r *RPC) hasLabel(*Label) bool {
 func (r *RPC) validate() error {
 	panic("not implemented")
 }
+
+type MessageType struct {
+	value  Message
+	stream Flag
+	parent *RPC
+
+	MessageReference
+}
+
+func (m MessageType) Get() Message {
+	return m.value
+
+}
+func (m *MessageType) Set(value Message) error {
+	old := m.value
+	m.value = value
+	if err := m.validate(); err != nil {
+		m.value = old
+		return err
+	}
+	old.removeReference(m)
+	value.addReference(m)
+	return nil
+
+}
+
+func (m *MessageType) validate() error {
+	if m.value == nil {
+		return fmt.Errorf("message must not be nil")
+	}
+	return nil
+}
+
+func (m *MessageType) Stream() *Flag {
+	if m.stream.parent == nil {
+		m.stream.parent = m
+	}
+	return &m.stream
+}
+
+func (m *MessageType) Parent() *RPC {
+	return m.parent
+}
+
+func (m *MessageType) validateFlag(f *Flag) error {
+	// TODO: handle "safe mode"
+	return nil
+}

@@ -71,14 +71,6 @@ type KeyType interface {
 	Parent() Map
 }
 
-type MessageType interface {
-	Get() Message
-	Set(Message) error
-	Stream() *Flag
-
-	Parent() *RPC
-}
-
 type Definition interface {
 	Label() *Label
 
@@ -92,9 +84,10 @@ type Definition interface {
 	hasLabel(*Label) bool
 	validateLabel(*Label) error
 	validateNumber(FieldNumber) error
+}
 
-	addReference(*Type)
-	removeReference(*Type)
+type MessageReference interface {
+	_isReference()
 }
 
 type DefinitionContainer interface {
@@ -134,8 +127,8 @@ type Message interface {
 	validateNumber(FieldNumber) error
 	insertField(MessageField) error
 
-	addReference(*Type)
-	removeReference(*Type)
+	addReference(MessageReference)
+	removeReference(MessageReference)
 
 	ValueType
 }

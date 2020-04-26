@@ -21,6 +21,8 @@ type MapKeyType interface {
 type Type struct {
 	value  ValueType
 	parent Typed
+
+	MessageReference
 }
 
 type Typed interface {
@@ -39,12 +41,16 @@ func (t *Type) Set(value ValueType) error {
 		return err
 	}
 	switch old := t.value.(type) {
-	case Definition:
+	case Message:
 		old.removeReference(t)
-		switch v := value.(type) {
-		case Definition:
-			v.addReference(t)
-		}
+	case Enum:
+		old.removeReference(t)
+	}
+	switch v := value.(type) {
+	case Message:
+		v.addReference(t)
+	case Enum:
+		v.addReference(t)
 	}
 	return nil
 }
