@@ -65,36 +65,36 @@ func (f *typedField) validate() (err error) {
 	return
 }
 
-type repeatableField struct {
+type Field struct {
 	field
 	_type    Type
 	repeated Flag
 	parent   *message
 }
 
-func (r *repeatableField) Type() *Type {
+func (r *Field) Type() *Type {
 	if r._type.parent == nil {
 		r._type.parent = r
 	}
 	return &r._type
 }
 
-func (r *repeatableField) Repeated() *Flag {
+func (r *Field) Repeated() *Flag {
 	if r.repeated.parent == nil {
 		r.repeated.parent = r
 	}
 	return &r.repeated
 }
 
-func (r *repeatableField) InsertIntoParent() error {
+func (r *Field) InsertIntoParent() error {
 	return r.parent.insertField(r)
 }
 
-func (r *repeatableField) Parent() Message {
+func (r *Field) Parent() Message {
 	return r.parent
 }
 
-func (r *repeatableField) validateAsMessageField() (err error) {
+func (r *Field) validateAsMessageField() (err error) {
 	if err = r.field.validate(); err != nil {
 		return
 	}
@@ -104,15 +104,15 @@ func (r *repeatableField) validateAsMessageField() (err error) {
 	return
 }
 
-func (r *repeatableField) validateLabel(l *Label) error {
+func (r *Field) validateLabel(l *Label) error {
 	return r.parent.validateLabel(l)
 }
 
-func (r *repeatableField) validateNumber(n FieldNumber) error {
+func (r *Field) validateNumber(n FieldNumber) error {
 	return r.parent.validateNumber(n)
 }
 
-func (r *repeatableField) validateFlag(f *Flag) error {
+func (r *Field) validateFlag(f *Flag) error {
 	// TODO: if we ever have "safe mode" to prevent backwards-incompatible
 	// changes, that is where errors whould happen
 	switch f {

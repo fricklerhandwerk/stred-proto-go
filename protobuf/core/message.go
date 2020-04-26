@@ -131,8 +131,12 @@ func (m *message) removeReference(t MessageReference) {
 	delete(m.references, t)
 }
 
-func (m *message) NewField() Field {
-	f := &repeatableField{parent: m}
+type MessageReference interface {
+	_isReference()
+}
+
+func (m *message) NewField() *Field {
+	f := &Field{parent: m}
 	f.label.parent = f
 	f.number.parent = f
 	f.deprecated.parent = f

@@ -79,10 +79,6 @@ type Definition interface {
 	validateNumber(FieldNumber) error
 }
 
-type MessageReference interface {
-	_isReference()
-}
-
 type DefinitionContainer interface {
 	Messages() []Message
 	NewMessage() *NewMessage
@@ -99,7 +95,7 @@ type Message interface {
 	Label() *Label
 	Fields() []MessageField
 
-	NewField() Field
+	NewField() *Field
 	NewMap() *Map
 	NewOneOf() *OneOf
 	NewReservedNumber() ReservedNumber
@@ -124,19 +120,6 @@ type Message interface {
 	removeReference(MessageReference)
 
 	ValueType
-}
-
-type Field interface {
-	Label() *Label
-	Number() *Number
-	Deprecated() *Flag
-	Type() *Type
-	Repeated() *Flag
-
-	InsertIntoParent() error
-	Parent() Message
-
-	MessageField
 }
 
 type ReservedRange interface {
