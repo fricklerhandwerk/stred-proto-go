@@ -160,8 +160,8 @@ func (m *message) NewReservedRange() *ReservedRange {
 	return &ReservedRange{parent: m}
 }
 
-func (m *message) NewReservedNumber() ReservedNumber {
-	n := &reservedNumber{parent: m}
+func (m *message) NewReservedNumber() *ReservedNumber {
+	n := &ReservedNumber{parent: m}
 	n.number.parent = n
 	return n
 

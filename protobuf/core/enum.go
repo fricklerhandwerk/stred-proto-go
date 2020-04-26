@@ -133,8 +133,8 @@ func (e *enum) NewReservedRange() *ReservedRange {
 	return &ReservedRange{parent: e}
 }
 
-func (e *enum) NewReservedNumber() ReservedNumber {
-	n := &reservedNumber{parent: e}
+func (e *enum) NewReservedNumber() *ReservedNumber {
+	n := &ReservedNumber{parent: e}
 	n.number.parent = n
 	return n
 }

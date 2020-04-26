@@ -67,7 +67,7 @@ package core
 type Definition interface {
 	Label() *Label
 
-	NewReservedNumber() ReservedNumber
+	NewReservedNumber() *ReservedNumber
 	NewReservedRange() *ReservedRange
 	NewReservedLabel() ReservedLabel
 
@@ -98,7 +98,7 @@ type Message interface {
 	NewField() *Field
 	NewMap() *Map
 	NewOneOf() *OneOf
-	NewReservedNumber() ReservedNumber
+	NewReservedNumber() *ReservedNumber
 	NewReservedRange() *ReservedRange
 	NewReservedLabel() ReservedLabel
 
@@ -122,21 +122,6 @@ type Message interface {
 	ValueType
 }
 
-type ReservedNumber interface {
-	Get() *uint
-	Set(uint) error
-
-	InsertIntoParent() error
-	Parent() Definition
-
-	FieldNumber
-
-	validateAsMessageField() error
-	validateAsEnumField() error
-	hasLabel(*Label) bool
-	hasNumber(FieldNumber) bool
-}
-
 type ReservedLabel interface {
 	Get() string
 	Set(string) error
@@ -157,7 +142,7 @@ type Enum interface {
 	Fields() []EnumField
 
 	NewVariant() *Variant
-	NewReservedNumber() ReservedNumber
+	NewReservedNumber() *ReservedNumber
 	NewReservedRange() *ReservedRange
 	NewReservedLabel() ReservedLabel
 

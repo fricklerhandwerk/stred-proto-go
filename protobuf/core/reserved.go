@@ -5,12 +5,12 @@ import (
 	"fmt"
 )
 
-type reservedNumber struct {
+type ReservedNumber struct {
 	number Number
 	parent Definition
 }
 
-func (r *reservedNumber) InsertIntoParent() error {
+func (r *ReservedNumber) InsertIntoParent() error {
 	switch p := r.parent.(type) {
 	case *enum:
 		return p.insertField(r)
@@ -21,39 +21,39 @@ func (r *reservedNumber) InsertIntoParent() error {
 	}
 }
 
-func (r reservedNumber) Get() *uint {
+func (r ReservedNumber) Get() *uint {
 	return r.number.Get()
 }
 
-func (r *reservedNumber) Set(value uint) error {
+func (r *ReservedNumber) Set(value uint) error {
 	return r.number.Set(value)
 }
 
-func (r reservedNumber) Parent() Definition {
+func (r ReservedNumber) Parent() Definition {
 	return r.parent
 }
 
-func (r *reservedNumber) validateNumber(n FieldNumber) error {
+func (r *ReservedNumber) validateNumber(n FieldNumber) error {
 	return r.parent.validateNumber(n)
 }
 
-func (r *reservedNumber) validateAsEnumField() error {
+func (r *ReservedNumber) validateAsEnumField() error {
 	return r.number.validate()
 }
 
-func (r reservedNumber) validateAsMessageField() error {
+func (r ReservedNumber) validateAsMessageField() error {
 	return r.validateAsEnumField()
 }
 
-func (r reservedNumber) hasLabel(l *Label) bool {
+func (r ReservedNumber) hasLabel(l *Label) bool {
 	return false
 }
 
-func (r *reservedNumber) hasNumber(n FieldNumber) bool {
+func (r *ReservedNumber) hasNumber(n FieldNumber) bool {
 	return r.number.hasNumber(n)
 }
 
-func (r reservedNumber) intersects(other FieldNumber) bool {
+func (r ReservedNumber) intersects(other FieldNumber) bool {
 	return r.number.intersects(other)
 }
 
