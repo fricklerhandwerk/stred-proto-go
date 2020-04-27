@@ -1,9 +1,5 @@
 package core
 
-import (
-	"fmt"
-)
-
 type field struct {
 	label      Label
 	number     Number
@@ -35,11 +31,7 @@ func (f *field) validate() (err error) {
 	if err != nil {
 		return
 	}
-	// TODO: let number self-validate
-	if f.number.value == nil {
-		return fmt.Errorf("field number not set")
-	}
-	err = f.number.parent.validateNumber(&f.number)
+	err = f.number.validate()
 	if err != nil {
 		return
 	}

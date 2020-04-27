@@ -72,11 +72,7 @@ func (o OneOf) validateNumber(n FieldNumber) error {
 }
 
 func (o *OneOf) validateAsMessageField() error {
-	// TODO: let label self-validate
-	if o.label.value == "" {
-		return fmt.Errorf("oneof label not set")
-	}
-	if err := o.parent.validateLabel(&o.label); err != nil {
+	if err := o.label.validate(); err != nil {
 		return err
 	}
 	for f := range o.fields {
