@@ -31,9 +31,6 @@ type Map struct {
 }
 
 func (m *Map) KeyType() *KeyType {
-	if m.keyType.parent == nil {
-		m.keyType.parent = m
-	}
 	return &m.keyType
 }
 

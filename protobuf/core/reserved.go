@@ -102,16 +102,10 @@ type ReservedRange struct {
 }
 
 func (r *ReservedRange) Start() *Number {
-	if r.start.parent == nil {
-		r.start.parent = r
-	}
 	return &r.start
 }
 
 func (r *ReservedRange) End() *Number {
-	if r.end.parent == nil {
-		r.end.parent = r
-	}
 	return &r.end
 }
 

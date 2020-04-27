@@ -11,9 +11,6 @@ type OneOf struct {
 }
 
 func (o *OneOf) Label() *Label {
-	if o.label.parent == nil {
-		o.label.parent = o
-	}
 	return &o.label
 }
 

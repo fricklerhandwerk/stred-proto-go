@@ -99,9 +99,9 @@ func TestTypedFieldSetProperties(t *testing.T) {
 	require.Nil(t, err)
 	assert.Equal(t, protobuf.Int32, f.Type().Get())
 
-	err = f.Type().Set(protobuf.Bytes)
+	err = f.Repeated().Set(true)
 	require.Nil(t, err)
-	assert.Equal(t, protobuf.Bytes, f.Type().Get())
+	assert.Equal(t, true, f.Repeated().Get())
 }
 
 func TestMessageAddField(t *testing.T) {

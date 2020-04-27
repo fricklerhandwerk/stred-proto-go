@@ -9,9 +9,6 @@ type Service struct {
 }
 
 func (s *Service) Label() *Label {
-	if s.label.parent == nil {
-		s.label.parent = s
-	}
 	return &s.label
 }
 
@@ -24,7 +21,15 @@ func (s *Service) RPCs() (out []*RPC) {
 }
 
 func (s *Service) NewRPC() *RPC {
-	panic("not implemented")
+	r := &RPC{
+		parent: s,
+	}
+	r.label.parent = r
+	r.request.parent = r
+	r.request.stream.parent = &r.request
+	r.response.parent = r
+	r.response.stream.parent = &r.response
+	return r
 }
 
 func (s *Service) InsertIntoParent() error {
@@ -124,6 +129,10 @@ func (r *RPC) hasLabel(*Label) bool {
 	panic("not implemented")
 }
 
+func (r *RPC) validateLabel(*Label) error {
+	panic("not implemented")
+}
+
 func (r *RPC) validate() error {
 	panic("not implemented")
 }
@@ -161,9 +170,6 @@ func (m *MessageType) validate() error {
 }
 
 func (m *MessageType) Stream() *Flag {
-	if m.stream.parent == nil {
-		m.stream.parent = m
-	}
 	return &m.stream
 }
 

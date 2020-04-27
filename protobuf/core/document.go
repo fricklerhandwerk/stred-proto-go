@@ -36,9 +36,10 @@ func (d Document) Imports() []*Import {
 }
 
 func (d *Document) NewImport() *Import {
-	return &Import{
-		parent: d,
-	}
+	i := &Import{parent: d}
+	i.path.parent = i
+	i.public.parent = i
+	return i
 }
 
 func (d Document) Services() (out []*Service) {
@@ -52,9 +53,9 @@ func (d Document) Services() (out []*Service) {
 }
 
 func (d *Document) NewService() *Service {
-	return &Service{
-		parent: d,
-	}
+	s := &Service{parent: d}
+	s.label.parent = s
+	return s
 }
 
 func (d Document) Messages() (out []Message) {
@@ -68,7 +69,9 @@ func (d Document) Messages() (out []Message) {
 }
 
 func (d *Document) NewMessage() *NewMessage {
-	return &NewMessage{parent: d}
+	m := &NewMessage{parent: d}
+	m.label.parent = m
+	return m
 }
 
 func (d Document) Enums() (out []Enum) {
@@ -82,7 +85,9 @@ func (d Document) Enums() (out []Enum) {
 }
 
 func (d *Document) NewEnum() *NewEnum {
-	return &NewEnum{parent: d}
+	e := &NewEnum{parent: d}
+	e.label.parent = e
+	return e
 }
 
 func (d *Document) Document() *Document {
@@ -204,20 +209,17 @@ func (p *Package) validateLabel(l *Label) error {
 }
 
 type Import struct {
-	parent *Document
 	path   Label
-	public *Flag
+	public Flag
+	parent *Document
 }
 
-func (i Import) Path() *Label {
-	if i.path.parent == nil {
-		i.path.parent = i
-	}
+func (i *Import) Path() *Label {
 	return &i.path
 }
 
-func (i Import) Public() *Flag {
-	return i.public
+func (i *Import) Public() *Flag {
+	return &i.public
 }
 
 func (i *Import) InsertIntoParent() error {
@@ -239,6 +241,11 @@ func (i Import) String() string {
 func (i Import) validateLabel(l *Label) error {
 	// TODO: here would come the interesting part of checking if the file we want
 	// to import actually exists
+	return nil
+}
+
+func (i Import) validateFlag(f *Flag) error {
+	// TODO: "safe mode"
 	return nil
 }
 

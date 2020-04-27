@@ -148,6 +148,8 @@ func (m *message) NewField() *Field {
 	f.label.parent = f
 	f.number.parent = f
 	f.deprecated.parent = f
+	f._type.parent = f
+	f.repeated.parent = f
 	return f
 }
 
@@ -157,15 +159,21 @@ func (m *message) NewMap() *Map {
 	f.number.parent = f
 	f.deprecated.parent = f
 	f._type.parent = f
+	f.keyType.parent = f
 	return f
 }
 
 func (m *message) NewOneOf() *OneOf {
-	return &OneOf{parent: m}
+	o := &OneOf{parent: m}
+	o.label.parent = o
+	return o
 }
 
 func (m *message) NewReservedRange() *ReservedRange {
-	return &ReservedRange{parent: m}
+	r := &ReservedRange{parent: m}
+	r.start.parent = r
+	r.end.parent = r
+	return r
 }
 
 func (m *message) NewReservedNumber() *ReservedNumber {
@@ -181,11 +189,15 @@ func (m *message) NewReservedLabel() *ReservedLabel {
 }
 
 func (m *message) NewMessage() *NewMessage {
-	return &NewMessage{parent: m}
+	n := &NewMessage{parent: m}
+	n.label.parent = n
+	return n
 }
 
 func (m *message) NewEnum() *NewEnum {
-	return &NewEnum{parent: m}
+	e := &NewEnum{parent: m}
+	e.label.parent = e
+	return e
 }
 
 func (m *message) Parent() DefinitionContainer {
@@ -267,9 +279,6 @@ type NewMessage struct {
 }
 
 func (m *NewMessage) Label() *Label {
-	if m.label.parent == nil {
-		m.label.parent = m
-	}
 	return &m.label
 }
 

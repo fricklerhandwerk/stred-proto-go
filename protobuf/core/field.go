@@ -65,16 +65,10 @@ type Field struct {
 }
 
 func (r *Field) Type() *Type {
-	if r._type.parent == nil {
-		r._type.parent = r
-	}
 	return &r._type
 }
 
 func (r *Field) Repeated() *Flag {
-	if r.repeated.parent == nil {
-		r.repeated.parent = r
-	}
 	return &r.repeated
 }
 

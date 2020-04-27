@@ -131,7 +131,10 @@ func (e *enum) NewVariant() *Variant {
 }
 
 func (e *enum) NewReservedRange() *ReservedRange {
-	return &ReservedRange{parent: e}
+	r := &ReservedRange{parent: e}
+	r.start.parent = r
+	r.end.parent = r
+	return r
 }
 
 func (e *enum) NewReservedNumber() *ReservedNumber {
@@ -242,9 +245,6 @@ func (e *NewEnum) toEnum() *enum {
 }
 
 func (e *NewEnum) Label() *Label {
-	if e.label.parent == nil {
-		e.label.parent = e
-	}
 	return &e.label
 }
 
