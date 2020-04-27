@@ -6,36 +6,29 @@ import (
 	"strings"
 )
 
-type NewEnum struct {
-	label  Label
-	parent DefinitionContainer
-}
+type Enum interface {
+	Label() *Label
+	AllowAlias() *Flag
 
-func (e *NewEnum) InsertIntoParent() error {
-	ee := &enum{
-		parent: e.parent,
-		label: Label{
-			value: e.label.Get(),
-		},
-	}
-	ee.label.parent = ee
-	ee.allowAlias.parent = ee
-	return e.parent.insertEnum(ee)
-}
+	Fields() []EnumField
 
-func (e *NewEnum) Label() *Label {
-	if e.label.parent == nil {
-		e.label.parent = e
-	}
-	return &e.label
-}
+	NewVariant() *Variant
+	NewReservedNumber() *ReservedNumber
+	NewReservedRange() *ReservedRange
+	NewReservedLabel() *ReservedLabel
 
-func (e NewEnum) Parent() DefinitionContainer {
-	return e.parent
-}
+	Parent() DefinitionContainer
 
-func (e NewEnum) validateLabel(l *Label) error {
-	return e.parent.validateLabel(l)
+	validate() error
+	hasLabel(*Label) bool
+	validateLabel(*Label) error
+	validateNumber(FieldNumber) error
+	insertField(EnumField) error
+
+	addReference(*Type)
+	removeReference(*Type)
+
+	ValueType
 }
 
 type enum struct {
@@ -212,6 +205,38 @@ func (e *enum) validate() (err error) {
 		return fmt.Errorf("label not set")
 	}
 	return e.parent.validateLabel(&e.label)
+}
+
+type NewEnum struct {
+	label  Label
+	parent DefinitionContainer
+}
+
+func (e *NewEnum) InsertIntoParent() error {
+	ee := &enum{
+		parent: e.parent,
+		label: Label{
+			value: e.label.Get(),
+		},
+	}
+	ee.label.parent = ee
+	ee.allowAlias.parent = ee
+	return e.parent.insertEnum(ee)
+}
+
+func (e *NewEnum) Label() *Label {
+	if e.label.parent == nil {
+		e.label.parent = e
+	}
+	return &e.label
+}
+
+func (e NewEnum) Parent() DefinitionContainer {
+	return e.parent
+}
+
+func (e NewEnum) validateLabel(l *Label) error {
+	return e.parent.validateLabel(l)
 }
 
 type Variant struct {

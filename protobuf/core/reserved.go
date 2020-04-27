@@ -5,6 +5,33 @@ import (
 	"fmt"
 )
 
+type Definition interface {
+	Label() *Label
+
+	NewReservedNumber() *ReservedNumber
+	NewReservedRange() *ReservedRange
+	NewReservedLabel() *ReservedLabel
+
+	Parent() DefinitionContainer
+
+	validate() error
+	hasLabel(*Label) bool
+	validateLabel(*Label) error
+	validateNumber(FieldNumber) error
+}
+
+type DefinitionContainer interface {
+	Messages() []Message
+	NewMessage() *NewMessage
+
+	Enums() []Enum
+	NewEnum() *NewEnum
+
+	validateLabel(*Label) error
+	insertMessage(*message) error
+	insertEnum(*enum) error
+}
+
 type ReservedNumber struct {
 	number Number
 	parent Definition

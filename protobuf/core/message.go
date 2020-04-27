@@ -5,35 +5,35 @@ import (
 	"fmt"
 )
 
-type NewMessage struct {
-	label  Label
-	parent DefinitionContainer
-}
+type Message interface {
+	Label() *Label
+	Fields() []MessageField
 
-func (m *NewMessage) Label() *Label {
-	if m.label.parent == nil {
-		m.label.parent = m
-	}
-	return &m.label
-}
+	NewField() *Field
+	NewMap() *Map
+	NewOneOf() *OneOf
+	NewReservedNumber() *ReservedNumber
+	NewReservedRange() *ReservedRange
+	NewReservedLabel() *ReservedLabel
 
-func (m *NewMessage) InsertIntoParent() error {
-	mm := &message{
-		parent: m.parent,
-		label: Label{
-			value: m.label.Get(),
-		},
-	}
-	mm.label.parent = mm
-	return m.parent.insertMessage(mm)
-}
+	Messages() []Message
+	NewMessage() *NewMessage
 
-func (m *NewMessage) Parent() DefinitionContainer {
-	return m.parent
-}
+	Enums() []Enum
+	NewEnum() *NewEnum
 
-func (m *NewMessage) validateLabel(l *Label) error {
-	return m.parent.validateLabel(l)
+	Parent() DefinitionContainer
+
+	validate() error
+	hasLabel(*Label) bool
+	validateLabel(*Label) error
+	validateNumber(FieldNumber) error
+	insertField(MessageField) error
+
+	addReference(MessageReference)
+	removeReference(MessageReference)
+
+	ValueType
 }
 
 type message struct {
@@ -121,6 +121,12 @@ func (m *message) insertMessage(n *message) error {
 }
 
 func (m *message) addReference(t MessageReference) {
+	// TODO: check if reference is already in document, otherwise we would have
+	// to do it in bulk when it gets relevant. it is actually even more
+	// complicated: once something containing a reference is inserted, that
+	// reference must be added, too. maybe there is no point in holding these
+	// references after all, as managing them is too much of a hassle, and we
+	// should collect them from the document on demand.
 	if m.references == nil {
 		m.references = make(map[MessageReference]struct{})
 	}
@@ -244,4 +250,35 @@ func (m message) validateNumber(n FieldNumber) error {
 
 func (m *message) validate() (err error) {
 	return m.label.validate()
+}
+
+type NewMessage struct {
+	label  Label
+	parent DefinitionContainer
+}
+
+func (m *NewMessage) Label() *Label {
+	if m.label.parent == nil {
+		m.label.parent = m
+	}
+	return &m.label
+}
+
+func (m *NewMessage) InsertIntoParent() error {
+	mm := &message{
+		parent: m.parent,
+		label: Label{
+			value: m.label.Get(),
+		},
+	}
+	mm.label.parent = mm
+	return m.parent.insertMessage(mm)
+}
+
+func (m *NewMessage) Parent() DefinitionContainer {
+	return m.parent
+}
+
+func (m *NewMessage) validateLabel(l *Label) error {
+	return m.parent.validateLabel(l)
 }
