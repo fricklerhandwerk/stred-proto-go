@@ -209,6 +209,15 @@ func TestVariantSetInvalidProperties(t *testing.T) {
 	require.Nil(t, err)
 	err = e.AllowAlias().Set(false)
 	require.NotNil(t, err)
+	// keep aliasing enabled
+	err = e.AllowAlias().Set(true)
+	require.Nil(t, err)
+
+	// disable aliasing after none is left
+	err = f2.Number().Set(2)
+	require.Nil(t, err)
+	err = e.AllowAlias().Set(false)
+	require.Nil(t, err)
 }
 
 func TestTypedFieldSetInvalidProperties(t *testing.T) {

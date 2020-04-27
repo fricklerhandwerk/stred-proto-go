@@ -9,6 +9,7 @@ import (
 type Enum interface {
 	Label() *Label
 	AllowAlias() *Flag
+	Aliases() map[uint][]*Variant
 
 	Fields() []EnumField
 
@@ -55,26 +56,28 @@ func (e *enum) AllowAlias() *Flag {
 	return &e.allowAlias
 }
 
-func (e enum) validateFlag(*Flag) error {
-	// check if aliasing is in place
-	numbers := make(map[uint]bool, len(e.fields))
+func (e *enum) Aliases() map[uint][]*Variant {
+	numbers := make(map[uint][]*Variant, len(e.fields))
 	for field := range e.fields {
 		switch f := field.(type) {
 		case *Variant:
 			n := *f.number.value
-			if numbers[n] {
-				// TODO: return error type with references to aliased fields
-				lines := []string{
-					fmt.Sprintf("field number %d is used multiple times.", n),
-					fmt.Sprintf("remove aliasing before setting %q.", "allow_alias = false"),
-				}
-				return errors.New(strings.Join(lines, " "))
+			numbers[n] = append(numbers[n], f)
+		}
+	}
+	return numbers
+}
+
+func (e enum) validateFlag(f *Flag) error {
+	for n, a := range e.Aliases() {
+		// check if aliasing is in place
+		if len(a) > 1 && !f.value {
+			// TODO: return error type with references to aliased fields
+			lines := []string{
+				fmt.Sprintf("field number %d is used multiple times.", n),
+				fmt.Sprintf("remove aliasing before setting %q.", "allow_alias = false"),
 			}
-			numbers[n] = true
-		case FieldNumber:
-			continue
-		default:
-			panic(fmt.Sprintf("unhandled enum field type %T", f))
+			return errors.New(strings.Join(lines, " "))
 		}
 	}
 	return nil
@@ -202,10 +205,7 @@ func (e enum) validateNumber(n FieldNumber) error {
 }
 
 func (e *enum) validate() (err error) {
-	if e.label.value == "" {
-		return fmt.Errorf("label not set")
-	}
-	return e.parent.validateLabel(&e.label)
+	return e.label.validate()
 }
 
 type NewEnum struct {
