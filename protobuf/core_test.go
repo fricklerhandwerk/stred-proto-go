@@ -478,6 +478,14 @@ func TestEnumValidateDefinition(t *testing.T) {
 	err = f2.InsertIntoParent()
 	require.Nil(t, err)
 	require.EqualValues(t, 2, len(e.Fields()))
+	for _, f := range e.Fields() {
+		switch v := f.(type) {
+		case *protobuf.Variant:
+			require.Contains(t, []string{"myField", "myNewField"}, v.Label().Get())
+		default:
+			t.Errorf("unexpected enum field %v", v)
+		}
+	}
 }
 
 func TestInsertIncompleteRange(t *testing.T) {

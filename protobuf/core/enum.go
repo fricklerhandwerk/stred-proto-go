@@ -85,6 +85,7 @@ func (e *enum) Fields() (out []EnumField) {
 	i := 0
 	for f := range e.fields {
 		out[i] = f
+		i++
 	}
 	return
 }
