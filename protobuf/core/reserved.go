@@ -13,6 +13,7 @@ type Definition interface {
 	NewReservedLabel() *ReservedLabel
 
 	Parent() DefinitionContainer
+	Document() *Document
 
 	validate() error
 	hasLabel(*Label) bool
@@ -26,6 +27,8 @@ type DefinitionContainer interface {
 
 	Enums() []Enum
 	NewEnum() *NewEnum
+
+	Document() *Document
 
 	validateLabel(*Label) error
 	insertMessage(*message) error
@@ -58,6 +61,14 @@ func (r *ReservedNumber) Set(value uint) error {
 
 func (r ReservedNumber) Parent() Definition {
 	return r.parent
+}
+
+func (r ReservedNumber) Document() *Document {
+	return r.parent.Document()
+}
+
+func (r *ReservedNumber) String() string {
+	return r.Document().Printer.ReservedNumber(r)
 }
 
 func (r *ReservedNumber) validateNumber(n FieldNumber) error {
@@ -117,6 +128,14 @@ func (r *ReservedRange) InsertIntoParent() error {
 
 func (r *ReservedRange) Parent() Definition {
 	return r.parent
+}
+
+func (r *ReservedRange) Document() *Document {
+	return r.parent.Document()
+}
+
+func (r *ReservedRange) String() string {
+	return r.Document().Printer.ReservedRange(r)
 }
 
 func (r *ReservedRange) hasNumber(other FieldNumber) bool {
@@ -205,6 +224,14 @@ func (r ReservedLabel) validateLabel(l *Label) error {
 
 func (r ReservedLabel) Parent() Definition {
 	return r.parent
+}
+
+func (r ReservedLabel) Document() *Document {
+	return r.parent.Document()
+}
+
+func (r *ReservedLabel) String() string {
+	return r.Document().Printer.ReservedLabel(r)
 }
 
 func (r *ReservedLabel) validateAsEnumField() error {

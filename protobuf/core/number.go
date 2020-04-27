@@ -11,6 +11,7 @@ type Number struct {
 
 type Numbered interface {
 	validateNumber(FieldNumber) error
+	Document() *Document
 }
 
 type FieldNumber interface {
@@ -54,6 +55,10 @@ func (n *Number) validate() error {
 
 func (n Number) Parent() Numbered {
 	return n.parent
+}
+
+func (n Number) String() string {
+	return n.parent.Document().Printer.Number(&n)
 }
 
 func (n *Number) hasNumber(other FieldNumber) bool {

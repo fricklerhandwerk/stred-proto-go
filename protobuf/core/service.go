@@ -35,6 +35,14 @@ func (s *Service) Parent() *Document {
 	return s.parent
 }
 
+func (s *Service) Document() *Document {
+	return s.parent
+}
+
+func (s *Service) String() string {
+	return s.parent.Printer.Service(s)
+}
+
 func (s *Service) hasLabel(l *Label) bool {
 	return s.label.hasLabel(l)
 }

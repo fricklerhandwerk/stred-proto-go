@@ -86,6 +86,10 @@ func (r *Field) Parent() Message {
 	return r.parent
 }
 
+func (r *Field) Document() *Document {
+	return r.parent.Document()
+}
+
 func (r *Field) validateAsMessageField() (err error) {
 	if err = r.field.validate(); err != nil {
 		return

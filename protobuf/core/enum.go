@@ -19,6 +19,8 @@ type Enum interface {
 	NewReservedLabel() *ReservedLabel
 
 	Parent() DefinitionContainer
+	Document() *Document
+	String() string
 
 	validate() error
 	hasLabel(*Label) bool
@@ -43,6 +45,8 @@ type enum struct {
 }
 
 type EnumField interface {
+	String() string
+	Document() *Document
 	validateAsEnumField() error
 	hasLabel(*Label) bool
 	hasNumber(FieldNumber) bool
@@ -146,6 +150,14 @@ func (e enum) Parent() DefinitionContainer {
 	return e.parent
 }
 
+func (e *enum) Document() *Document {
+	return e.parent.Document()
+}
+
+func (e *enum) String() string {
+	return e.Document().Printer.Enum(e)
+}
+
 func (e *enum) hasLabel(l *Label) bool {
 	return e.label.hasLabel(l)
 }
@@ -214,6 +226,10 @@ type NewEnum struct {
 }
 
 func (e *NewEnum) InsertIntoParent() error {
+	return e.parent.insertEnum(e.toEnum())
+}
+
+func (e *NewEnum) toEnum() *enum {
 	ee := &enum{
 		parent: e.parent,
 		label: Label{
@@ -222,7 +238,7 @@ func (e *NewEnum) InsertIntoParent() error {
 	}
 	ee.label.parent = ee
 	ee.allowAlias.parent = ee
-	return e.parent.insertEnum(ee)
+	return ee
 }
 
 func (e *NewEnum) Label() *Label {
@@ -234,6 +250,14 @@ func (e *NewEnum) Label() *Label {
 
 func (e NewEnum) Parent() DefinitionContainer {
 	return e.parent
+}
+
+func (e *NewEnum) Document() *Document {
+	return e.parent.Document()
+}
+
+func (e *NewEnum) String() string {
+	return e.toEnum().String()
 }
 
 func (e NewEnum) validateLabel(l *Label) error {
@@ -258,6 +282,14 @@ func (v *Variant) InsertIntoParent() error {
 
 func (v Variant) Parent() Enum {
 	return v.parent
+}
+
+func (v *Variant) Document() *Document {
+	return v.parent.Document()
+}
+
+func (v *Variant) String() string {
+	return v.Document().Printer.Variant(v)
 }
 
 func (v *Variant) validateAsEnumField() (err error) {

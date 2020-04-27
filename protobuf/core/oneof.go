@@ -43,6 +43,10 @@ func (o *OneOf) Parent() Message {
 	return o.parent
 }
 
+func (o *OneOf) Document() *Document {
+	return o.parent.Document()
+}
+
 func (o *OneOf) insertField(f *OneOfField) error {
 	if o.fields == nil {
 		o.fields = make(map[*OneOfField]struct{})
@@ -112,6 +116,10 @@ func (f *OneOfField) InsertIntoParent() error {
 
 func (f *OneOfField) Parent() *OneOf {
 	return f.parent
+}
+
+func (f *OneOfField) Document() *Document {
+	return f.parent.Document()
 }
 
 func (f OneOfField) validateLabel(l *Label) error {

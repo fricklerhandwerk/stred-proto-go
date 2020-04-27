@@ -23,6 +23,8 @@ type Message interface {
 	NewEnum() *NewEnum
 
 	Parent() DefinitionContainer
+	Document() *Document
+	String() string
 
 	validate() error
 	hasLabel(*Label) bool
@@ -190,6 +192,14 @@ func (m *message) Parent() DefinitionContainer {
 	return m.parent
 }
 
+func (m message) Document() *Document {
+	return m.parent.Document()
+}
+
+func (m *message) String() string {
+	return m.Document().Printer.Message(m)
+}
+
 func (m message) hasLabel(l *Label) bool {
 	return m.label.hasLabel(l)
 }
@@ -264,6 +274,10 @@ func (m *NewMessage) Label() *Label {
 }
 
 func (m *NewMessage) InsertIntoParent() error {
+	return m.parent.insertMessage(m.toMessage())
+}
+
+func (m *NewMessage) toMessage() *message {
 	mm := &message{
 		parent: m.parent,
 		label: Label{
@@ -271,11 +285,19 @@ func (m *NewMessage) InsertIntoParent() error {
 		},
 	}
 	mm.label.parent = mm
-	return m.parent.insertMessage(mm)
+	return mm
 }
 
 func (m *NewMessage) Parent() DefinitionContainer {
 	return m.parent
+}
+
+func (m *NewMessage) Document() *Document {
+	return m.parent.Document()
+}
+
+func (m *NewMessage) String() string {
+	return m.toMessage().String()
 }
 
 func (m *NewMessage) validateLabel(l *Label) error {

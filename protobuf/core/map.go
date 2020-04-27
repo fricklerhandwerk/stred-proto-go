@@ -45,6 +45,10 @@ func (m *Map) Parent() Message {
 	return m.parent
 }
 
+func (m *Map) Document() *Document {
+	return m.parent.Document()
+}
+
 func (m *Map) validateAsMessageField() error {
 	if err := m.validate(); err != nil {
 		return err

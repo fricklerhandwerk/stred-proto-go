@@ -5,10 +5,11 @@ import (
 )
 
 func NewDocument() *Document {
-	return &Document{}
+	return &Document{Printer: DefaultPrinter}
 }
 
 type Document struct {
+	Printer
 	_package Package
 	imports  map[*Import]struct{}
 	services map[*Service]struct{}
@@ -82,6 +83,14 @@ func (d Document) Enums() (out []Enum) {
 
 func (d *Document) NewEnum() *NewEnum {
 	return &NewEnum{parent: d}
+}
+
+func (d *Document) Document() *Document {
+	return d
+}
+
+func (d Document) String() string {
+	return d.Printer.Document(&d)
 }
 
 func (d *Document) insertImport(i *Import) (err error) {
@@ -182,6 +191,14 @@ func (p *Package) Parent() *Document {
 	return p.parent
 }
 
+func (p *Package) Document() *Document {
+	return p.parent
+}
+
+func (p Package) String() string {
+	return p.parent.Printer.Package(&p)
+}
+
 func (p *Package) validateLabel(l *Label) error {
 	return nil
 }
@@ -193,6 +210,9 @@ type Import struct {
 }
 
 func (i Import) Path() *Label {
+	if i.path.parent == nil {
+		i.path.parent = i
+	}
 	return &i.path
 }
 
@@ -208,6 +228,20 @@ func (i Import) Parent() *Document {
 	return i.parent
 }
 
+func (i Import) Document() *Document {
+	return i.parent
+}
+
+func (i Import) String() string {
+	return i.parent.Printer.Import(&i)
+}
+
+func (i Import) validateLabel(l *Label) error {
+	// TODO: here would come the interesting part of checking if the file we want
+	// to import actually exists
+	return nil
+}
+
 func (i Import) validate() error {
-	return i.parent.validateLabel(&i.path)
+	return i.path.validate()
 }

@@ -12,6 +12,7 @@ type Label struct {
 
 type Labelled interface {
 	validateLabel(*Label) error
+	Document() *Document
 }
 
 func (l Label) Get() string {
@@ -50,6 +51,10 @@ func validateIdentifier(value string) (err error) {
 
 func (l Label) Parent() Labelled {
 	return l.parent
+}
+
+func (l Label) String() string {
+	return l.parent.Document().Printer.Label(&l)
 }
 
 func (l *Label) hasLabel(other *Label) bool {
