@@ -132,6 +132,10 @@ func (r *RPC) Document() *Document {
 	return r.parent.Document()
 }
 
+func (r RPC) String() string {
+	return r.Document().Printer.RPC(&r)
+}
+
 func (r *RPC) hasLabel(l *Label) bool {
 	return r.label.hasLabel(l)
 }

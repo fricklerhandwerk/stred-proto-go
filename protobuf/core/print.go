@@ -80,8 +80,20 @@ func (p Print) Import(i *Import) string {
 	return fmt.Sprintf("import %s%s;", public, i.path)
 }
 
-func (p Print) Service(*Service) string { return "" }
-func (p Print) RPC(*RPC) string         { return "" }
+func (p Print) Service(s *Service) string {
+	rpcs := make([]string, 0, len(s.rpcs))
+	for r := range s.rpcs {
+		rpcs = append(rpcs, r.String())
+	}
+	for i, r := range rpcs {
+		rpcs[i] = fmt.Sprintf("%s%s\n", p.Indent, r)
+	}
+	return fmt.Sprintf("service %s {\n%s}", s.label, strings.Join(rpcs, ""))
+}
+
+func (p Print) RPC(r *RPC) string {
+	return fmt.Sprintf("rpc %s (%s) returns (%s);", r.label, r.request.value.Label(), r.response.value.Label())
+}
 
 func (p Print) Message(m Message) string {
 	items := make([]string, 0, len(m.Fields()))
@@ -107,9 +119,9 @@ func (p Print) Field(f *Field) string {
 	return fmt.Sprintf("%s%s %s = %s%s;", repeated, f._type, f.label, f.number, deprecated)
 }
 
-func (p Print) Map(*Map) string               { return "" }
-func (p Print) OneOf(*OneOf) string           { return "" }
-func (p Print) OneOfField(*OneOfField) string { return "" }
+func (p Print) Map(*Map) string               { panic("not implemented") }
+func (p Print) OneOf(*OneOf) string           { panic("not implemented") }
+func (p Print) OneOfField(*OneOfField) string { panic("not implemented") }
 
 func (p Print) Enum(e Enum) string {
 	items := make([]string, 0, 1+len(e.Fields()))
@@ -185,4 +197,4 @@ func (p Print) Type(t *Type) string {
 	}
 }
 
-func (p Print) KeyType(*KeyType) string { return "" }
+func (p Print) KeyType(*KeyType) string { panic("not implemented") }
