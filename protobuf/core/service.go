@@ -125,6 +125,10 @@ func (r *RPC) Parent() *Service {
 	return r.parent
 }
 
+func (r *RPC) Document() *Document {
+	return r.parent.Document()
+}
+
 func (r *RPC) hasLabel(*Label) bool {
 	panic("not implemented")
 }

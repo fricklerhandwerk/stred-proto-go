@@ -44,6 +44,10 @@ func (o *OneOf) Document() *Document {
 	return o.parent.Document()
 }
 
+func (o OneOf) String() string {
+	return o.Document().Printer.OneOf(&o)
+}
+
 func (o *OneOf) insertField(f *OneOfField) error {
 	if o.fields == nil {
 		o.fields = make(map[*OneOfField]struct{})

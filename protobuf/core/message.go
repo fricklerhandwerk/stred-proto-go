@@ -50,6 +50,7 @@ type message struct {
 }
 
 type MessageField interface {
+	String() string
 	validateAsMessageField() error
 	hasLabel(*Label) bool
 	hasNumber(FieldNumber) bool

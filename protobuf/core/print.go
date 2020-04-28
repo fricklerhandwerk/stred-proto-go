@@ -45,9 +45,13 @@ func (p Print) Document(d *Document) string {
 	if d._package.label.value != "" {
 		items = append(items, d._package.String())
 	}
+
+	imports := make([]string, 0, len(d.Imports()))
 	for _, i := range d.Imports() {
-		items = append(items, i.String())
+		imports = append(imports, i.String())
 	}
+	items = append(items, strings.Join(imports, "\n"))
+
 	for _, s := range d.Services() {
 		items = append(items, s.String())
 	}
@@ -57,6 +61,7 @@ func (p Print) Document(d *Document) string {
 	for _, m := range d.Messages() {
 		items = append(items, m.String())
 	}
+
 	for i, item := range items {
 		items[i] = fmt.Sprint("\n\n", item)
 	}
@@ -67,11 +72,41 @@ func (p Print) Package(pkg *Package) string {
 	return fmt.Sprintf("package %s;", pkg.label)
 }
 
-func (p Print) Import(*Import) string         { return "" }
-func (p Print) Service(*Service) string       { return "" }
-func (p Print) RPC(*RPC) string               { return "" }
-func (p Print) Message(Message) string        { return "" }
-func (p Print) Field(*Field) string           { return "" }
+func (p Print) Import(i *Import) string {
+	var public string
+	if i.public.value {
+		public = "public "
+	}
+	return fmt.Sprintf("import %s%s;", public, i.path)
+}
+
+func (p Print) Service(*Service) string { return "" }
+func (p Print) RPC(*RPC) string         { return "" }
+
+func (p Print) Message(m Message) string {
+	items := make([]string, 0, len(m.Fields()))
+	for _, f := range m.Fields() {
+		items = append(items, f.String())
+	}
+	for i, item := range items {
+		items[i] = fmt.Sprintln(p.Indent, item)
+	}
+
+	return fmt.Sprintf("message %s {\n%s}", m.Label(), strings.Join(items, ""))
+}
+
+func (p Print) Field(f *Field) string {
+	var repeated string
+	if f.repeated.value {
+		repeated = "repeated "
+	}
+	var deprecated string
+	if f.deprecated.value {
+		deprecated = " [deprecated=true]"
+	}
+	return fmt.Sprintf("%s%s %s = %s%s;", repeated, f._type, f.label, f.number, deprecated)
+}
+
 func (p Print) Map(*Map) string               { return "" }
 func (p Print) OneOf(*OneOf) string           { return "" }
 func (p Print) OneOfField(*OneOfField) string { return "" }
@@ -123,18 +158,31 @@ func (p Print) ReservedLabel(l *ReservedLabel) string {
 }
 
 func (p Print) Label(l *Label) string {
-	if l.value != "" {
-		return l.value
+	if l.value == "" {
+		return p.Blank
 	}
-	return p.Blank
+	return l.value
 }
 
 func (p Print) Number(n *Number) string {
-	if n.value != nil {
-		return fmt.Sprint(*n.value)
+	if n.value == nil {
+		return p.Blank
 	}
-	return p.Blank
+	return fmt.Sprint(*n.value)
 }
 
-func (p Print) Type(*Type) string       { return "" }
+func (p Print) Type(t *Type) string {
+	if t.value == nil {
+		return p.Blank
+	}
+	switch v := t.value.(type) {
+	case Message:
+		return v.Label().String()
+	case Enum:
+		return v.Label().String()
+	default:
+		return fmt.Sprint(v)
+	}
+}
+
 func (p Print) KeyType(*KeyType) string { return "" }

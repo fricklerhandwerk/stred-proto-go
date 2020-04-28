@@ -46,6 +46,10 @@ func (m *Map) Document() *Document {
 	return m.parent.Document()
 }
 
+func (m Map) String() string {
+	return m.Document().Printer.Map(&m)
+}
+
 func (m *Map) validateAsMessageField() error {
 	if err := m.validate(); err != nil {
 		return err

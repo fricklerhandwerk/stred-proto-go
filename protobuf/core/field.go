@@ -84,6 +84,10 @@ func (r *Field) Document() *Document {
 	return r.parent.Document()
 }
 
+func (r Field) String() string {
+	return r.Document().Printer.Field(&r)
+}
+
 func (r *Field) validateAsMessageField() (err error) {
 	if err = r.field.validate(); err != nil {
 		return

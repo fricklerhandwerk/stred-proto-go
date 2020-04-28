@@ -27,6 +27,7 @@ type Type struct {
 
 type Typed interface {
 	Type() *Type
+	Document() *Document
 }
 
 func (t *Type) Get() ValueType {
@@ -57,6 +58,10 @@ func (t *Type) Set(value ValueType) error {
 
 func (t *Type) Parent() Typed {
 	return t.parent
+}
+
+func (t Type) String() string {
+	return t.parent.Document().Printer.Type(&t)
 }
 
 func (t *Type) validate() error {
