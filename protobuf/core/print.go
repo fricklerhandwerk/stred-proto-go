@@ -40,25 +40,27 @@ var DefaultPrinter = Print{
 }
 
 func (p Print) Document(d *Document) string {
-	numItems := 1 + len(d.Imports()) + len(d.Services()) + len(d.Messages()) + len(d.Enums())
+	numItems := 1 + len(d.imports) + len(d.services) + len(d.messages) + len(d.enums)
 	items := make([]string, 0, numItems)
 	if d._package.label.value != "" {
 		items = append(items, d._package.String())
 	}
 
-	imports := make([]string, 0, len(d.Imports()))
-	for _, i := range d.Imports() {
-		imports = append(imports, i.String())
+	if len(d.imports) > 0 {
+		imports := make([]string, 0, len(d.imports))
+		for i := range d.imports {
+			imports = append(imports, i.String())
+		}
+		items = append(items, strings.Join(imports, "\n"))
 	}
-	items = append(items, strings.Join(imports, "\n"))
 
-	for _, s := range d.Services() {
+	for s := range d.services {
 		items = append(items, s.String())
 	}
-	for _, e := range d.Enums() {
+	for e := range d.enums {
 		items = append(items, e.String())
 	}
-	for _, m := range d.Messages() {
+	for m := range d.messages {
 		items = append(items, m.String())
 	}
 
@@ -85,10 +87,7 @@ func (p Print) Service(s *Service) string {
 	for r := range s.rpcs {
 		rpcs = append(rpcs, r.String())
 	}
-	for i, r := range rpcs {
-		rpcs[i] = fmt.Sprintf("%s%s\n", p.Indent, r)
-	}
-	return fmt.Sprintf("service %s {\n%s}", s.label, strings.Join(rpcs, ""))
+	return fmt.Sprintf("service %s {\n%s\n}", s.label, p.indent(strings.Join(rpcs, "\n")))
 }
 
 func (p Print) RPC(r *RPC) string {
@@ -96,15 +95,41 @@ func (p Print) RPC(r *RPC) string {
 }
 
 func (p Print) Message(m Message) string {
-	items := make([]string, 0, len(m.Fields()))
-	for _, f := range m.Fields() {
-		items = append(items, f.String())
+	items := make([]string, 0, 3)
+	if len(m.Fields()) > 0 {
+		items = append(items, p.messageFields(m))
 	}
-	for i, item := range items {
-		items[i] = fmt.Sprintln(p.Indent, item)
+	if len(m.Enums()) > 0 {
+		items = append(items, p.messageEnums(m))
 	}
+	if len(m.Messages()) > 0 {
+		items = append(items, p.messageMessages(m))
+	}
+	return fmt.Sprintf("message %s {\n%s\n}", m.Label(), p.indent(strings.Join(items, "\n\n")))
+}
 
-	return fmt.Sprintf("message %s {\n%s}", m.Label(), strings.Join(items, ""))
+func (p Print) messageFields(m Message) string {
+	fields := make([]string, 0, len(m.Fields()))
+	for _, f := range m.Fields() {
+		fields = append(fields, f.String())
+	}
+	return strings.Join(fields, "\n")
+}
+
+func (p Print) messageEnums(m Message) string {
+	enums := make([]string, 0, len(m.Enums()))
+	for _, e := range m.Enums() {
+		enums = append(enums, e.String())
+	}
+	return strings.Join(enums, "\n")
+}
+
+func (p Print) messageMessages(m Message) string {
+	messages := make([]string, 0, len(m.Messages()))
+	for _, n := range m.Messages() {
+		messages = append(messages, n.String())
+	}
+	return strings.Join(messages, "\n")
 }
 
 func (p Print) Field(f *Field) string {
@@ -112,23 +137,28 @@ func (p Print) Field(f *Field) string {
 	if f.repeated.value {
 		repeated = "repeated "
 	}
+	return fmt.Sprintf("%s%s %s = %s%s;", repeated, f._type, f.label, f.number, deprecated(f.deprecated))
+}
+
+func (p Print) Map(m *Map) string {
+	return fmt.Sprintf("map <%s,%s> %s = %s%s;", m.keyType, m._type, m.label, m.number, deprecated(m.deprecated))
+}
+
+func (p Print) OneOf(o *OneOf) string {
+	items := make([]string, 0, len(o.fields))
+	for f := range o.fields {
+		items = append(items, f.String())
+	}
+	return fmt.Sprintf("oneof %s {\n%s\n}", o.Label(), p.indent(strings.Join(items, "\n")))
+}
+
+func (p Print) OneOfField(f *OneOfField) string {
 	var deprecated string
 	if f.deprecated.value {
 		deprecated = " [deprecated=true]"
 	}
-	return fmt.Sprintf("%s%s %s = %s%s;", repeated, f._type, f.label, f.number, deprecated)
+	return fmt.Sprintf("%s %s = %s%s;", f._type, f.label, f.number, deprecated)
 }
-
-func (p Print) Map(m *Map) string {
-	var deprecated string
-	if m.deprecated.value {
-		deprecated = " [deprecated=true]"
-	}
-	return fmt.Sprintf("map <%s,%s> %s = %s%s;", m.keyType, m._type, m.label, m.number, deprecated)
-}
-
-func (p Print) OneOf(*OneOf) string           { panic("not implemented") }
-func (p Print) OneOfField(*OneOfField) string { panic("not implemented") }
 
 func (p Print) Enum(e Enum) string {
 	items := make([]string, 0, 1+len(e.Fields()))
@@ -140,11 +170,8 @@ func (p Print) Enum(e Enum) string {
 	for _, f := range e.Fields() {
 		items = append(items, f.String())
 	}
-	for i, item := range items {
-		items[i] = fmt.Sprintln(p.Indent, item)
-	}
 
-	return fmt.Sprintf("enum %s {\n%s}", e.Label(), strings.Join(items, ""))
+	return fmt.Sprintf("enum %s {\n%s\n}", e.Label(), p.indent(strings.Join(items, "\n")))
 }
 
 func aliased(e Enum) bool {
@@ -157,11 +184,7 @@ func aliased(e Enum) bool {
 }
 
 func (p Print) Variant(v *Variant) string {
-	var deprecated string
-	if v.deprecated.value {
-		deprecated = " [deprecated=true]"
-	}
-	return fmt.Sprintf("%s = %s%s;", v.label, v.number, deprecated)
+	return fmt.Sprintf("%s = %s%s;", v.label, v.number, deprecated(v.deprecated))
 }
 
 func (p Print) ReservedNumber(n *ReservedNumber) string {
@@ -209,4 +232,23 @@ func (p Print) KeyType(k *KeyType) string {
 		return p.Blank
 	}
 	return fmt.Sprint(k.value)
+}
+
+func (p Print) indent(in string) string {
+	lines := strings.Split(in, "\n")
+	for i, l := range lines {
+		indent := ""
+		if l != "" {
+			indent = p.Indent
+		}
+		lines[i] = fmt.Sprint(indent, l)
+	}
+	return strings.Join(lines, "\n")
+}
+
+func deprecated(f Flag) string {
+	if f.value {
+		return " [deprecated=true]"
+	}
+	return ""
 }

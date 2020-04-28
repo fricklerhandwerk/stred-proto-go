@@ -103,6 +103,9 @@ func (m *message) insertField(f MessageField) error {
 }
 
 func (m *message) insertEnum(e *enum) error {
+	if m.enums == nil {
+		m.enums = make(map[*enum]struct{})
+	}
 	if _, ok := m.enums[e]; ok {
 		return fmt.Errorf("already inserted")
 	}
@@ -114,6 +117,9 @@ func (m *message) insertEnum(e *enum) error {
 }
 
 func (m *message) insertMessage(n *message) error {
+	if m.messages == nil {
+		m.messages = make(map[*message]struct{})
+	}
 	if _, ok := m.messages[n]; ok {
 		return fmt.Errorf("already inserted")
 	}

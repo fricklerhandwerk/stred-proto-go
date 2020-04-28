@@ -115,12 +115,16 @@ func (f *OneOfField) InsertIntoParent() error {
 	return f.parent.insertField(f)
 }
 
-func (f *OneOfField) Parent() *OneOf {
+func (f OneOfField) Parent() *OneOf {
 	return f.parent
 }
 
-func (f *OneOfField) Document() *Document {
+func (f OneOfField) Document() *Document {
 	return f.parent.Document()
+}
+
+func (f OneOfField) String() string {
+	return f.Document().Printer.OneOfField(&f)
 }
 
 func (f OneOfField) validateLabel(l *Label) error {
