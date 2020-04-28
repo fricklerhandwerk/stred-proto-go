@@ -119,7 +119,14 @@ func (p Print) Field(f *Field) string {
 	return fmt.Sprintf("%s%s %s = %s%s;", repeated, f._type, f.label, f.number, deprecated)
 }
 
-func (p Print) Map(*Map) string               { panic("not implemented") }
+func (p Print) Map(m *Map) string {
+	var deprecated string
+	if m.deprecated.value {
+		deprecated = " [deprecated=true]"
+	}
+	return fmt.Sprintf("map <%s,%s> %s = %s%s;", m.keyType, m._type, m.label, m.number, deprecated)
+}
+
 func (p Print) OneOf(*OneOf) string           { panic("not implemented") }
 func (p Print) OneOfField(*OneOfField) string { panic("not implemented") }
 
@@ -197,4 +204,9 @@ func (p Print) Type(t *Type) string {
 	}
 }
 
-func (p Print) KeyType(*KeyType) string { panic("not implemented") }
+func (p Print) KeyType(k *KeyType) string {
+	if k.value == nil {
+		return p.Blank
+	}
+	return fmt.Sprint(k.value)
+}

@@ -23,6 +23,14 @@ func (t KeyType) Parent() *Map {
 	return t.parent
 }
 
+func (t KeyType) Document() *Document {
+	return t.parent.Document()
+}
+
+func (t KeyType) String() string {
+	return t.Document().Printer.KeyType(&t)
+}
+
 type Map struct {
 	typedField
 	keyType KeyType

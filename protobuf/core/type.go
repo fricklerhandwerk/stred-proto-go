@@ -15,7 +15,7 @@ type ValueType interface {
 // - `float`
 // - `bytes`
 type MapKeyType interface {
-	_isKeyType()
+	_isMapKeyType()
 }
 
 type Type struct {

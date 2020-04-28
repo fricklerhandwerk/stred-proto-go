@@ -65,6 +65,7 @@ func (m message) Fields() (out []MessageField) {
 	i := 0
 	for f := range m.fields {
 		out[i] = f
+		i++
 	}
 	return
 }
