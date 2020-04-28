@@ -53,6 +53,9 @@ func (s *Service) hasLabel(l *Label) bool {
 }
 
 func (s *Service) insertRPC(r *RPC) error {
+	if s.rpcs == nil {
+		s.rpcs = make(map[*RPC]struct{})
+	}
 	if _, ok := s.rpcs[r]; ok {
 		return fmt.Errorf("already inserted")
 	}
@@ -109,12 +112,12 @@ func (r *RPC) Label() *Label {
 	return &r.label
 }
 
-func (r *RPC) Request() MessageType {
-	return r.request
+func (r *RPC) Request() *MessageType {
+	return &r.request
 }
 
-func (r *RPC) Response() MessageType {
-	return r.response
+func (r *RPC) Response() *MessageType {
+	return &r.response
 }
 
 func (r *RPC) InsertIntoParent() error {
@@ -129,16 +132,25 @@ func (r *RPC) Document() *Document {
 	return r.parent.Document()
 }
 
-func (r *RPC) hasLabel(*Label) bool {
-	panic("not implemented")
+func (r *RPC) hasLabel(l *Label) bool {
+	return r.label.hasLabel(l)
 }
 
-func (r *RPC) validateLabel(*Label) error {
-	panic("not implemented")
+func (r *RPC) validateLabel(l *Label) error {
+	return r.parent.validateLabel(l)
 }
 
 func (r *RPC) validate() error {
-	panic("not implemented")
+	if err := r.label.validate(); err != nil {
+		return err
+	}
+	if err := r.request.validate(); err != nil {
+		return err
+	}
+	if err := r.response.validate(); err != nil {
+		return err
+	}
+	return nil
 }
 
 type MessageType struct {
@@ -160,7 +172,9 @@ func (m *MessageType) Set(value Message) error {
 		m.value = old
 		return err
 	}
-	old.removeReference(m)
+	if old != nil {
+		old.removeReference(m)
+	}
 	value.addReference(m)
 	return nil
 

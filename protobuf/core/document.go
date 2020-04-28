@@ -113,6 +113,9 @@ func (d *Document) insertImport(i *Import) (err error) {
 }
 
 func (d *Document) insertService(s *Service) (err error) {
+	if d.services == nil {
+		d.services = make(map[*Service]struct{})
+	}
 	if _, ok := d.services[s]; ok {
 		return fmt.Errorf("already inserted")
 	}
