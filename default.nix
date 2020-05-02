@@ -12,7 +12,7 @@ pkgs.buildGo113Module {
   version = "0.0.0";
   # will change when `go.mod` changes - trust `nix` and update this with
   # whatever it comes up with
-  modSha256 = "1lvq7rbvbb1d98nd5ldh2dbjpdplhvmlnn5a7hfj3imi8d7g5326";
+  modSha256 = "04xgy6gd4zgld74vdys9a787c4chcil4zw8qmnfijxjy3r0m9lba";
   src = ./.;
   shellHook = ''
     # work around <https://github.com/NixOS/nixpkgs/issues/69401>
