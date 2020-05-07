@@ -40,6 +40,8 @@ var DefaultPrinter = Print{
 }
 
 func (p Print) Document(d *Document) string {
+	// TODO: test against `protoc`
+
 	numItems := 1 + len(d.imports) + len(d.services) + len(d.messages) + len(d.enums)
 	items := make([]string, 0, numItems)
 	if d._package.label.value != "" {
@@ -87,7 +89,11 @@ func (p Print) Service(s *Service) string {
 	for r := range s.rpcs {
 		rpcs = append(rpcs, r.String())
 	}
-	return fmt.Sprintf("service %s {\n%s\n}", s.label, p.indent(strings.Join(rpcs, "\n")))
+	block := "{}"
+	if len(rpcs) > 0 {
+		block = fmt.Sprintf("{\n%s\n}", p.indent(strings.Join(rpcs, "\n")))
+	}
+	return fmt.Sprintf("service %s %s", s.label, block)
 }
 
 func (p Print) RPC(r *RPC) string {
@@ -105,7 +111,11 @@ func (p Print) Message(m Message) string {
 	if len(m.Messages()) > 0 {
 		items = append(items, p.messageMessages(m))
 	}
-	return fmt.Sprintf("message %s {\n%s\n}", m.Label(), p.indent(strings.Join(items, "\n\n")))
+	block := "{}"
+	if len(items) > 0 {
+		block = fmt.Sprintf("{\n%s\n}", p.indent(strings.Join(items, "\n\n")))
+	}
+	return fmt.Sprintf("message %s %s", m.Label(), block)
 }
 
 func (p Print) messageFields(m Message) string {
@@ -149,7 +159,11 @@ func (p Print) OneOf(o *OneOf) string {
 	for f := range o.fields {
 		items = append(items, f.String())
 	}
-	return fmt.Sprintf("oneof %s {\n%s\n}", o.Label(), p.indent(strings.Join(items, "\n")))
+	block := "{}"
+	if len(items) > 0 {
+		block = fmt.Sprintf("{\n%s\n}", p.indent(strings.Join(items, "\n")))
+	}
+	return fmt.Sprintf("oneof %s %s", o.Label(), block)
 }
 
 func (p Print) OneOfField(f *OneOfField) string {
@@ -170,8 +184,11 @@ func (p Print) Enum(e Enum) string {
 	for _, f := range e.Fields() {
 		items = append(items, f.String())
 	}
-
-	return fmt.Sprintf("enum %s {\n%s\n}", e.Label(), p.indent(strings.Join(items, "\n")))
+	block := "{}"
+	if len(items) > 0 {
+		block = fmt.Sprintf("{\n%s\n}", p.indent(strings.Join(items, "\n")))
+	}
+	return fmt.Sprintf("enum %s %s", e.Label(), block)
 }
 
 func aliased(e Enum) bool {
