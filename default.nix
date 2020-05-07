@@ -8,8 +8,8 @@ let
   pkgs = import (nixpkgs) {};
 in
 pkgs.buildGo113Module {
-  pname = "stred-proto";
-  version = "0.0.0";
+  pname = "stred-proto-go";
+  version = "0.1.0";
   # will change when `go.mod` changes - trust `nix` and update this with
   # whatever it comes up with
   modSha256 = "04xgy6gd4zgld74vdys9a787c4chcil4zw8qmnfijxjy3r0m9lba";
